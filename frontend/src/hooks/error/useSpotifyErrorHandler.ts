@@ -1,5 +1,5 @@
 import { useCallback } from "react";
-import { AxiosError } from "axios";
+import { HttpError } from "@/services/http-client";
 import { toast } from "sonner";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
@@ -30,11 +30,11 @@ export const useSpotifyErrorHandler = () => {
       staleTime: 5 * 60 * 1000,
       retry: false,
       enabled: isAuthenticated,
-    }
+    },
   );
 
   const parseSpotifyError = useCallback((error: unknown): SpotifyError => {
-    if (error instanceof AxiosError) {
+    if (error instanceof HttpError) {
       const status = error.response?.status;
       const responseData = error.response?.data;
 
@@ -66,7 +66,7 @@ export const useSpotifyErrorHandler = () => {
 
         case 429:
           const retryAfter = parseInt(
-            error.response?.headers["retry-after"] || "60"
+            error.response?.headers["retry-after"] || "60",
           );
           return {
             type: "RATE_LIMITED",
@@ -163,7 +163,7 @@ export const useSpotifyErrorHandler = () => {
       }
       return spotifyError;
     },
-    [parseSpotifyError, router, isLoggingOut, isAuthenticated]
+    [parseSpotifyError, router, isLoggingOut, isAuthenticated],
   );
 
   const isSpotifyConnected = useCallback(() => {
@@ -177,7 +177,7 @@ export const useSpotifyErrorHandler = () => {
     (error: unknown): SpotifyError => {
       return parseSpotifyError(error);
     },
-    [parseSpotifyError]
+    [parseSpotifyError],
   );
 
   return {
