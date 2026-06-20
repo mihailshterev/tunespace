@@ -1,0 +1,13 @@
+minimumReleaseAge: 10080
+blockExoticSubdeps: true
+
+trustPolicy: no-downgrade
+trustPolicyIgnoreAfter: 129600
+
+allowBuilds:
+  sharp: false
+  unrs-resolver: false
+
+overrides:
+  next>postcss: "8.5.15"
+  styled-components>postcss: "8.5.15"

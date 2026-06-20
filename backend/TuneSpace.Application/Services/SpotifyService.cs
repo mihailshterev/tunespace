@@ -21,7 +21,7 @@ internal class SpotifyService(
     private readonly SpotifyOptions _spotifyOptions = spotifyOptions.Value;
     private readonly IOAuthStateService _oAuthStateService = oAuthStateService;
 
-    private const string SpotifyRedirectUri = "http://localhost:5053/api/Spotify/callback";
+    private const string SpotifyRedirectUri = "http://127.0.0.1:5053/api/Spotify/callback";
 
     private static readonly JsonSerializerOptions jsonSerializerOptions = new()
     {
