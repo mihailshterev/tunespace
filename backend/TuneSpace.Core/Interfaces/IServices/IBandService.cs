@@ -1,7 +1,7 @@
-using TuneSpace.Core.Enums;
 using TuneSpace.Core.DTOs.Requests.Band;
 using TuneSpace.Core.DTOs.Responses.Band;
 using TuneSpace.Core.DTOs.Responses.User;
+using TuneSpace.Core.Enums;
 
 namespace TuneSpace.Core.Interfaces.IServices;
 

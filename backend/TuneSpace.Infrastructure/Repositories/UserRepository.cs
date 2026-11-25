@@ -2,8 +2,8 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
-using TuneSpace.Core.Models;
 using TuneSpace.Core.Interfaces.IRepositories;
+using TuneSpace.Core.Models;
 
 namespace TuneSpace.Infrastructure.Repositories;
 

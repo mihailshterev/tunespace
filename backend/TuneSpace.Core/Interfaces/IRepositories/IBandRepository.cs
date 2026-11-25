@@ -1,5 +1,5 @@
-using TuneSpace.Core.Models;
 using TuneSpace.Core.Entities;
+using TuneSpace.Core.Models;
 
 namespace TuneSpace.Core.Interfaces.IRepositories;
 
