@@ -1,10 +1,10 @@
 using Microsoft.Extensions.DependencyInjection;
-using TuneSpace.Core.Interfaces.IServices;
-using TuneSpace.Core.Interfaces.IInfrastructure;
+using TuneSpace.Application.BackgroundServices;
 using TuneSpace.Application.Services;
 using TuneSpace.Application.Services.AI;
 using TuneSpace.Application.Services.MusicDiscovery;
-using TuneSpace.Application.BackgroundServices;
+using TuneSpace.Core.Interfaces.IInfrastructure;
+using TuneSpace.Core.Interfaces.IServices;
 
 namespace TuneSpace.Application;
 

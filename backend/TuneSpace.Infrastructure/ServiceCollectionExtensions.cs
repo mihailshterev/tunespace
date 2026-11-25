@@ -1,25 +1,25 @@
+using System.Net.Mail;
+using System.Text;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using TuneSpace.Infrastructure.Clients;
-using TuneSpace.Infrastructure.Data;
-using TuneSpace.Infrastructure.Repositories;
-using TuneSpace.Infrastructure.Services;
+using Microsoft.Extensions.Http.Resilience;
+using Microsoft.Extensions.Options;
+using Microsoft.IdentityModel.Tokens;
+using Polly;
 using TuneSpace.Core.Entities;
+using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IClients;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
-using System.Text;
-using Microsoft.IdentityModel.Tokens;
+using TuneSpace.Infrastructure.Clients;
+using TuneSpace.Infrastructure.Data;
 using TuneSpace.Infrastructure.Identity;
 using TuneSpace.Infrastructure.Options;
-using Microsoft.Extensions.Options;
-using Polly;
-using Microsoft.Extensions.Http.Resilience;
-using TuneSpace.Core.Exceptions;
-using System.Net.Mail;
+using TuneSpace.Infrastructure.Repositories;
+using TuneSpace.Infrastructure.Services;
 
 namespace TuneSpace.Infrastructure;
 

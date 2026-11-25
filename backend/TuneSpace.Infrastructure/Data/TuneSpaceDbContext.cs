@@ -7,26 +7,26 @@ namespace TuneSpace.Infrastructure.Data;
 
 public class TuneSpaceDbContext(DbContextOptions<TuneSpaceDbContext> options) : IdentityDbContext<User, ApplicationRole, Guid>(options)
 {
-    public DbSet<RefreshToken> RefreshTokens { get; set; }
-    public DbSet<Band> Bands { get; set; }
-    public DbSet<Follow> Follows { get; set; }
-    public DbSet<BandFollow> BandFollows { get; set; }
-    public DbSet<Notification> Notifications { get; set; }
-    public DbSet<Chat> Chats { get; set; }
-    public DbSet<Message> Messages { get; set; }
-    public DbSet<BandChat> BandChats { get; set; }
-    public DbSet<BandMessage> BandMessages { get; set; }
-    public DbSet<MusicEvent> MusicEvents { get; set; }
-    public DbSet<Merchandise> Merchandises { get; set; }
-    public DbSet<ForumCategory> ForumCategories { get; set; }
-    public DbSet<ForumThread> ForumThreads { get; set; }
-    public DbSet<ForumPost> ForumPosts { get; set; }
-    public DbSet<ForumPostLike> ForumPostLikes { get; set; }
-    public DbSet<ArtistEmbedding> ArtistEmbeddings { get; set; }
-    public DbSet<RecommendationContext> RecommendationContexts { get; set; }
-    public DbSet<DynamicScoringWeights> DynamicScoringWeights { get; set; }
-    public DbSet<GenreEvolution> GenreEvolutions { get; set; }
-    public DbSet<RecommendationFeedback> RecommendationFeedbacks { get; set; }
+    public DbSet<RefreshToken> RefreshTokens { get; set; } = null!;
+    public DbSet<Band> Bands { get; set; } = null!;
+    public DbSet<Follow> Follows { get; set; } = null!;
+    public DbSet<BandFollow> BandFollows { get; set; } = null!;
+    public DbSet<Notification> Notifications { get; set; } = null!;
+    public DbSet<Chat> Chats { get; set; } = null!;
+    public DbSet<Message> Messages { get; set; } = null!;
+    public DbSet<BandChat> BandChats { get; set; } = null!;
+    public DbSet<BandMessage> BandMessages { get; set; } = null!;
+    public DbSet<MusicEvent> MusicEvents { get; set; } = null!;
+    public DbSet<Merchandise> Merchandises { get; set; } = null!;
+    public DbSet<ForumCategory> ForumCategories { get; set; } = null!;
+    public DbSet<ForumThread> ForumThreads { get; set; } = null!;
+    public DbSet<ForumPost> ForumPosts { get; set; } = null!;
+    public DbSet<ForumPostLike> ForumPostLikes { get; set; } = null!;
+    public DbSet<ArtistEmbedding> ArtistEmbeddings { get; set; } = null!;
+    public DbSet<RecommendationContext> RecommendationContexts { get; set; } = null!;
+    public DbSet<DynamicScoringWeights> DynamicScoringWeights { get; set; } = null!;
+    public DbSet<GenreEvolution> GenreEvolutions { get; set; } = null!;
+    public DbSet<RecommendationFeedback> RecommendationFeedbacks { get; set; } = null!;
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

@@ -1,9 +1,9 @@
+using System.Data;
 using Microsoft.ML.OnnxRuntime;
+using Microsoft.ML.OnnxRuntime.Tensors;
 using Microsoft.ML.Tokenizers;
 using Pgvector;
 using TuneSpace.Core.Interfaces.IServices;
-using Microsoft.ML.OnnxRuntime.Tensors;
-using System.Data;
 
 namespace TuneSpace.Application.Services;
 
@@ -165,12 +165,6 @@ internal class EmbeddingService : IEmbeddingService, IDisposable
     {
         var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MlModels");
         return Path.Combine(baseDir, "sentence-transformer.onnx");
-    }
-
-    private static string GetTokenizerPath()
-    {
-        var baseDir = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "MlModels");
-        return Path.Combine(baseDir, "sentence-transformer.tokenizer.json");
     }
 
     private static Tokenizer? GetTokenizer()

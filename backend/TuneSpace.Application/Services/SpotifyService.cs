@@ -1,6 +1,6 @@
+using System.Text.Json;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
-using System.Text.Json;
 using TuneSpace.Application.Common;
 using TuneSpace.Core.DTOs.Responses.Spotify;
 using TuneSpace.Core.Exceptions;
@@ -53,7 +53,7 @@ internal class SpotifyService(
 
     async Task<SpotifyTokenResponse> ISpotifyService.ExchangeCodeForTokenAsync(string code)
     {
-        var parameters = new FormUrlEncodedContent(
+        using var parameters = new FormUrlEncodedContent(
         [
             new KeyValuePair<string, string?>("grant_type", "authorization_code"),
             new KeyValuePair<string, string?>("code", code),
@@ -460,7 +460,7 @@ internal class SpotifyService(
             { "client_secret", _spotifyOptions.ClientSecret }
         };
 
-        var content = new FormUrlEncodedContent(parameters);
+        using var content = new FormUrlEncodedContent(parameters);
 
         try
         {

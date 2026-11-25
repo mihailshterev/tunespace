@@ -1,11 +1,11 @@
+using System.Diagnostics;
 using System.Text.Json;
+using System.Text.RegularExpressions;
+using TuneSpace.Core.DTOs.Responses.Spotify;
+using TuneSpace.Core.Entities;
 using TuneSpace.Core.Interfaces.IClients;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.Models;
-using TuneSpace.Core.DTOs.Responses.Spotify;
-using System.Diagnostics;
-using TuneSpace.Core.Entities;
-using System.Text.RegularExpressions;
 
 namespace TuneSpace.Application.Services.AI;
 
@@ -54,7 +54,7 @@ internal class AIRecommendationService(
             var aiResponse = await _ollamaClient.PromptWithContext(enhancedPrompt);
             var aiRecommendations = ParseAIRecommendationsWithConfidence(aiResponse);
 
-            var aiBands = await FetchAndScoreAISuggestedBandsAsync(aiRecommendations, userId, genres, location, spotifyAccessToken, journeyContext);
+            var aiBands = await FetchAndScoreAISuggestedBandsAsync(aiRecommendations, userId, genres, spotifyAccessToken, journeyContext);
 
             var allCandidates = new List<BandModel>();
             allCandidates.AddRange(vectorResults);
@@ -265,7 +265,6 @@ internal class AIRecommendationService(
         List<AIRecommendationWithConfidence> aiRecommendations,
         string userId,
         List<string> genres,
-        string location,
         string spotifyAccessToken,
         MusicalJourneyContext journeyContext)
     {
@@ -284,7 +283,7 @@ internal class AIRecommendationService(
                 {
                     foreach (var artist in searchResponse.Artists.Items.Take(1))
                     {
-                        var bandModel = ConvertSpotifyArtistToBandModel(artist, genres, location);
+                        var bandModel = ConvertSpotifyArtistToBandModel(artist, genres);
 
                         bandModel.RelevanceScore = CalculateAdaptiveRelevanceScore(artist, genres, recommendation.ConfidenceScore, scoringWeights, journeyContext);
 
@@ -490,10 +489,10 @@ internal class AIRecommendationService(
 
         var ragContext = await _vectorSearchService.GenerateRecommendationContextAsync(userId, topArtists, genres, location);
 
-        var aiRecommendations = await GenerateAIRecommendationsAsync(userId, topArtists, genres, location, vectorResults, ragContext);
+        var aiRecommendations = await GenerateAIRecommendationsAsync(topArtists, genres, location, vectorResults, ragContext);
 
         var aiBandNames = ExtractBandNamesFromAIResponse(aiRecommendations);
-        var aiBands = await FetchAISuggestedBandsAsync(aiBandNames, genres, location, spotifyAccessToken);
+        var aiBands = await FetchAISuggestedBandsAsync(aiBandNames, genres, spotifyAccessToken);
 
         var allCandidates = new List<BandModel>();
         allCandidates.AddRange(vectorResults);
@@ -503,7 +502,7 @@ internal class AIRecommendationService(
 
         if (rankedRecommendations.Count < limit)
         {
-            var additionalBands = await DiscoverAdditionalBandsAsync(genres, location, limit - rankedRecommendations.Count);
+            var additionalBands = await DiscoverAdditionalBandsAsync(genres, limit - rankedRecommendations.Count);
             rankedRecommendations.AddRange(additionalBands);
         }
 
@@ -577,7 +576,7 @@ internal class AIRecommendationService(
         };
     }
 
-    private static BandModel ConvertSpotifyArtistToBandModel(SpotifyArtistDTO spotifyArtist, List<string> userGenres, string userLocation)
+    private static BandModel ConvertSpotifyArtistToBandModel(SpotifyArtistDTO spotifyArtist, List<string> userGenres)
     {
         return new BandModel
         {
@@ -645,13 +644,13 @@ internal class AIRecommendationService(
         return $"{band.Name} is recommended based on their unique sound in the {string.Join(", ", band.Genres)} scene.";
     }
 
-    private async Task<string> GenerateAIRecommendationsAsync(string userId, List<string> topArtists, List<string> genres, string location, List<BandModel> vectorResults, string ragContext)
+    private async Task<string> GenerateAIRecommendationsAsync(List<string> topArtists, List<string> genres, string location, List<BandModel> vectorResults, string ragContext)
     {
         var prompt = _enhancedAIPromptService.BuildAdvancedRecommendationPrompt(topArtists, genres, location, vectorResults, ragContext);
         return await _ollamaClient.PromptWithContext(prompt);
     }
 
-    private async Task<List<BandModel>> FetchAISuggestedBandsAsync(List<string> bandNames, List<string> genres, string location, string spotifyAccessToken)
+    private async Task<List<BandModel>> FetchAISuggestedBandsAsync(List<string> bandNames, List<string> genres, string spotifyAccessToken)
     {
         var bands = new List<BandModel>();
         var discoveredArtists = new List<SpotifyArtistDTO>();
@@ -679,7 +678,7 @@ internal class AIRecommendationService(
         {
             try
             {
-                var bandModel = ConvertSpotifyArtistToBandModel(artist, genres, location);
+                var bandModel = ConvertSpotifyArtistToBandModel(artist, genres);
 
                 await _vectorSearchService.IndexBandcampArtistAsync(ConvertToBandcampArtistModel(artist));
 
@@ -735,7 +734,7 @@ internal class AIRecommendationService(
         }
     }
 
-    private async Task<List<BandModel>> DiscoverAdditionalBandsAsync(List<string> genres, string location, int needed)
+    private async Task<List<BandModel>> DiscoverAdditionalBandsAsync(List<string> genres, int needed)
     {
         var additionalBands = new List<BandModel>();
         var discoverResults = new List<BandcampArtistModel>();

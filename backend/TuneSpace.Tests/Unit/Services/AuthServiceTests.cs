@@ -1,7 +1,6 @@
-using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Options;
-using Moq;
+using NSubstitute;
 using TuneSpace.Application.Services;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
@@ -9,37 +8,30 @@ using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Infrastructure.Options;
+using Xunit;
 
 namespace TuneSpace.Tests.Unit.Services;
 
 public class AuthServiceTests
 {
-    private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<IPasswordHasher<User>> _mockPasswordHasher;
-    private readonly Mock<ITokenService> _mockTokenService;
-    private readonly Mock<IEmailService> _mockEmailService;
-    private readonly Mock<IUrlBuilderService> _mockUrlBuilderService;
-    private readonly Mock<UserManager<User>> _mockUserManager;
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IPasswordHasher<User> _passwordHasher = Substitute.For<IPasswordHasher<User>>();
+    private readonly ITokenService _tokenService = Substitute.For<ITokenService>();
+    private readonly IEmailService _emailService = Substitute.For<IEmailService>();
+    private readonly IUrlBuilderService _urlBuilderService = Substitute.For<IUrlBuilderService>();
+    private readonly UserManager<User> _userManager = Substitute.For<UserManager<User>>(
+        Substitute.For<IUserStore<User>>(), null, null, null, null, null, null, null, null);
     private readonly IAuthService _authService;
 
     public AuthServiceTests()
     {
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockPasswordHasher = new Mock<IPasswordHasher<User>>();
-        _mockTokenService = new Mock<ITokenService>();
-        _mockEmailService = new Mock<IEmailService>();
-        _mockUrlBuilderService = new Mock<IUrlBuilderService>();
-
-        _mockUserManager = new Mock<UserManager<User>>(
-            Mock.Of<IUserStore<User>>(), null!, null!, null!, null!, null!, null!, null!, null!);
-
         _authService = new AuthService(
-            _mockUserRepository.Object,
-            _mockPasswordHasher.Object,
-            _mockTokenService.Object,
-            _mockEmailService.Object,
-            _mockUrlBuilderService.Object,
-            _mockUserManager.Object,
+            _userRepository,
+            _passwordHasher,
+            _tokenService,
+            _emailService,
+            _urlBuilderService,
+            _userManager,
             Options.Create(new EmailOptions()));
     }
 
@@ -53,7 +45,6 @@ public class AuthServiceTests
         var userId = Guid.NewGuid();
         var token = "confirmation-token";
         var confirmationUrl = "https://example.com/confirm";
-
         var insertedUser = new User
         {
             Id = userId,
@@ -63,62 +54,35 @@ public class AuthServiceTests
             EmailConfirmed = false
         };
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(name))
-            .ReturnsAsync((User?)null);
-
-        _mockUserRepository
-            .Setup(x => x.InsertUserAsync(It.IsAny<User>(), password))
-            .Returns(Task.CompletedTask);
-
-        _mockUserRepository
-            .SetupSequence(x => x.GetUserByEmailAsync(email))
-            .ReturnsAsync((User?)null)
-            .ReturnsAsync(insertedUser);
-
-        _mockUserManager
-            .Setup(x => x.GenerateEmailConfirmationTokenAsync(insertedUser))
-            .ReturnsAsync(token);
-
-        _mockUrlBuilderService
-            .Setup(x => x.BuildEmailConfirmationUrl(userId.ToString(), token))
-            .Returns(confirmationUrl);
-
-        _mockEmailService
-            .Setup(x => x.SendEmailConfirmationAsync(insertedUser, token, confirmationUrl))
-            .Returns(Task.CompletedTask);
+        _userRepository.GetUserByNameAsync(name).Returns((User?)null);
+        _userRepository.GetUserByEmailAsync(email).Returns((User?)null, insertedUser);
+        _userManager.GenerateEmailConfirmationTokenAsync(insertedUser).Returns(token);
+        _urlBuilderService.BuildEmailConfirmationUrl(userId.ToString(), token).Returns(confirmationUrl);
 
         await _authService.RegisterAsync(name, email, password, role);
 
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(name), Times.Once);
-        _mockUserRepository.Verify(x => x.InsertUserAsync(It.Is<User>(u =>
-            u.UserName == name && u.Email == email && u.Role == role && !u.EmailConfirmed), password), Times.Once);
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Exactly(2));
-        _mockUserManager.Verify(x => x.GenerateEmailConfirmationTokenAsync(insertedUser), Times.Once);
-        _mockUrlBuilderService.Verify(x => x.BuildEmailConfirmationUrl(userId.ToString(), token), Times.Once);
-        _mockEmailService.Verify(x => x.SendEmailConfirmationAsync(insertedUser, token, confirmationUrl), Times.Once);
+        await _userRepository.Received(1).GetUserByNameAsync(name);
+        await _userRepository.Received(1).InsertUserAsync(
+            Arg.Is<User>(u => u.UserName == name && u.Email == email && u.Role == role && !u.EmailConfirmed),
+            password);
+        await _userRepository.Received(2).GetUserByEmailAsync(email);
+        await _userManager.Received(1).GenerateEmailConfirmationTokenAsync(insertedUser);
+        _urlBuilderService.Received(1).BuildEmailConfirmationUrl(userId.ToString(), token);
+        await _emailService.Received(1).SendEmailConfirmationAsync(insertedUser, token, confirmationUrl);
     }
 
     [Fact]
     public async Task RegisterAsync_WithExistingUsername_ShouldThrowArgumentException()
     {
         var name = "existinguser";
-        var email = "test@example.com";
-        var password = "Password123!";
-        var role = Roles.Listener;
-
-        var existingUser = new User { UserName = name };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(name))
-            .ReturnsAsync(existingUser);
+        _userRepository.GetUserByNameAsync(name).Returns(new User { UserName = name });
 
         var exception = await Assert.ThrowsAsync<ArgumentException>(
-            () => _authService.RegisterAsync(name, email, password, role));
+            () => _authService.RegisterAsync(name, "test@example.com", "Password123!", Roles.Listener));
 
-        exception.Message.Should().Contain("Username already taken");
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(name), Times.Once);
-        _mockUserRepository.Verify(x => x.InsertUserAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
+        Assert.Contains("Username already taken", exception.Message);
+        await _userRepository.Received(1).GetUserByNameAsync(name);
+        await _userRepository.DidNotReceiveWithAnyArgs().InsertUserAsync(default!, default!);
     }
 
     [Fact]
@@ -129,7 +93,6 @@ public class AuthServiceTests
         var userId = Guid.NewGuid();
         var accessToken = "access-token";
         var refreshToken = "refresh-token";
-
         var user = new User
         {
             Id = userId,
@@ -139,65 +102,40 @@ public class AuthServiceTests
             PasswordHash = "hashed-password"
         };
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByEmailAsync(email))
-            .ReturnsAsync(user);
-
-        _mockPasswordHasher
-            .Setup(x => x.VerifyHashedPassword(user, user.PasswordHash, password))
-            .Returns(PasswordVerificationResult.Success);
-
-        _mockUserManager
-            .Setup(x => x.IsEmailConfirmedAsync(user))
-            .ReturnsAsync(true);
-
-        _mockUserRepository
-            .Setup(x => x.UpdateUserAsync(user))
-            .Returns(Task.CompletedTask);
-
-        _mockTokenService
-            .Setup(x => x.GenerateAccessToken(user))
-            .Returns(accessToken);
-
-        _mockTokenService
-            .Setup(x => x.GenerateRefreshToken())
-            .Returns(refreshToken); _mockTokenService
-            .Setup(x => x.SaveRefreshTokenAsync(user, refreshToken))
-            .ReturnsAsync(refreshToken);
+        _userRepository.GetUserByEmailAsync(email).Returns(user);
+        _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password).Returns(PasswordVerificationResult.Success);
+        _userManager.IsEmailConfirmedAsync(user).Returns(true);
+        _tokenService.GenerateAccessToken(user).Returns(accessToken);
+        _tokenService.GenerateRefreshToken().Returns(refreshToken);
+        _tokenService.SaveRefreshTokenAsync(user, refreshToken).Returns(refreshToken);
 
         var result = await _authService.LoginAsync(email, password);
 
-        result.Should().NotBeNull();
-        result.Id.Should().Be(userId.ToString());
-        result.Username.Should().Be("testuser");
-        result.Role.Should().Be("Listener");
-        result.AccessToken.Should().Be(accessToken);
-        result.RefreshToken.Should().Be(refreshToken);
+        Assert.Equal(userId.ToString(), result.Id);
+        Assert.Equal("testuser", result.Username);
+        Assert.Equal("Listener", result.Role);
+        Assert.Equal(accessToken, result.AccessToken);
+        Assert.Equal(refreshToken, result.RefreshToken);
 
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Once);
-        _mockPasswordHasher.Verify(x => x.VerifyHashedPassword(user, user.PasswordHash, password), Times.Once);
-        _mockUserManager.Verify(x => x.IsEmailConfirmedAsync(user), Times.Once);
-        _mockUserRepository.Verify(x => x.UpdateUserAsync(user), Times.Once);
-        _mockTokenService.Verify(x => x.GenerateAccessToken(user), Times.Once);
-        _mockTokenService.Verify(x => x.GenerateRefreshToken(), Times.Once);
-        _mockTokenService.Verify(x => x.SaveRefreshTokenAsync(user, refreshToken), Times.Once);
+        await _userRepository.Received(1).GetUserByEmailAsync(email);
+        _passwordHasher.Received(1).VerifyHashedPassword(user, user.PasswordHash, password);
+        await _userManager.Received(1).IsEmailConfirmedAsync(user);
+        await _userRepository.Received(1).UpdateUserAsync(user);
+        _tokenService.Received(1).GenerateAccessToken(user);
+        _tokenService.Received(1).GenerateRefreshToken();
+        await _tokenService.Received(1).SaveRefreshTokenAsync(user, refreshToken);
     }
 
     [Fact]
     public async Task LoginAsync_WithInvalidEmail_ShouldThrowUnauthorizedException()
     {
         var email = "nonexistent@example.com";
-        var password = "Password123!";
+        _userRepository.GetUserByEmailAsync(email).Returns((User?)null);
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByEmailAsync(email))
-            .ReturnsAsync((User?)null);
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() => _authService.LoginAsync(email, "Password123!"));
 
-        var exception = await Assert.ThrowsAsync<UnauthorizedException>(
-            () => _authService.LoginAsync(email, password));
-
-        exception.Message.Should().Contain("Incorrect email or password");
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Once);
+        Assert.Contains("Incorrect email or password", exception.Message);
+        await _userRepository.Received(1).GetUserByEmailAsync(email);
     }
 
     [Fact]
@@ -205,7 +143,6 @@ public class AuthServiceTests
     {
         var email = "test@example.com";
         var password = "WrongPassword";
-
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -214,21 +151,14 @@ public class AuthServiceTests
             Role = Roles.Listener,
             PasswordHash = "hashed-password"
         };
+        _userRepository.GetUserByEmailAsync(email).Returns(user);
+        _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password).Returns(PasswordVerificationResult.Failed);
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByEmailAsync(email))
-            .ReturnsAsync(user);
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() => _authService.LoginAsync(email, password));
 
-        _mockPasswordHasher
-            .Setup(x => x.VerifyHashedPassword(user, user.PasswordHash, password))
-            .Returns(PasswordVerificationResult.Failed);
-
-        var exception = await Assert.ThrowsAsync<UnauthorizedException>(
-            () => _authService.LoginAsync(email, password));
-
-        exception.Message.Should().Contain("Incorrect email or password");
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Once);
-        _mockPasswordHasher.Verify(x => x.VerifyHashedPassword(user, user.PasswordHash, password), Times.Once);
+        Assert.Contains("Incorrect email or password", exception.Message);
+        await _userRepository.Received(1).GetUserByEmailAsync(email);
+        _passwordHasher.Received(1).VerifyHashedPassword(user, user.PasswordHash, password);
     }
 
     [Fact]
@@ -236,7 +166,6 @@ public class AuthServiceTests
     {
         var email = "test@example.com";
         var password = "Password123!";
-
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -245,26 +174,16 @@ public class AuthServiceTests
             Role = Roles.Listener,
             PasswordHash = "hashed-password"
         };
+        _userRepository.GetUserByEmailAsync(email).Returns(user);
+        _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password).Returns(PasswordVerificationResult.Success);
+        _userManager.IsEmailConfirmedAsync(user).Returns(false);
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByEmailAsync(email))
-            .ReturnsAsync(user);
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() => _authService.LoginAsync(email, password));
 
-        _mockPasswordHasher
-            .Setup(x => x.VerifyHashedPassword(user, user.PasswordHash, password))
-            .Returns(PasswordVerificationResult.Success);
-
-        _mockUserManager
-            .Setup(x => x.IsEmailConfirmedAsync(user))
-            .ReturnsAsync(false);
-
-        var exception = await Assert.ThrowsAsync<UnauthorizedException>(
-            () => _authService.LoginAsync(email, password));
-
-        exception.Message.Should().Contain("Please confirm your email address");
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Once);
-        _mockPasswordHasher.Verify(x => x.VerifyHashedPassword(user, user.PasswordHash, password), Times.Once);
-        _mockUserManager.Verify(x => x.IsEmailConfirmedAsync(user), Times.Once);
+        Assert.Contains("Please confirm your email address", exception.Message);
+        await _userRepository.Received(1).GetUserByEmailAsync(email);
+        _passwordHasher.Received(1).VerifyHashedPassword(user, user.PasswordHash, password);
+        await _userManager.Received(1).IsEmailConfirmedAsync(user);
     }
 
     [Fact]
@@ -272,7 +191,6 @@ public class AuthServiceTests
     {
         var userId = Guid.NewGuid().ToString();
         var token = "confirmation-token";
-
         var user = new User
         {
             Id = Guid.Parse(userId),
@@ -280,42 +198,28 @@ public class AuthServiceTests
             Email = "test@example.com",
             Role = Roles.Listener
         };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByIdAsync(userId))
-            .ReturnsAsync(user);
-
-        _mockUserManager
-            .Setup(x => x.ConfirmEmailAsync(user, token))
-            .ReturnsAsync(IdentityResult.Success);
-
-        _mockEmailService
-            .Setup(x => x.SendWelcomeEmailAsync(user))
-            .Returns(Task.CompletedTask);
+        _userRepository.GetUserByIdAsync(userId).Returns(user);
+        _userManager.ConfirmEmailAsync(user, token).Returns(IdentityResult.Success);
 
         var result = await _authService.ConfirmEmailAsync(userId, token);
 
-        result.Should().BeTrue();
-        _mockUserRepository.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
-        _mockUserManager.Verify(x => x.ConfirmEmailAsync(user, token), Times.Once);
-        _mockEmailService.Verify(x => x.SendWelcomeEmailAsync(user), Times.Once);
+        Assert.True(result);
+        await _userRepository.Received(1).GetUserByIdAsync(userId);
+        await _userManager.Received(1).ConfirmEmailAsync(user, token);
+        await _emailService.Received(1).SendWelcomeEmailAsync(user);
     }
 
     [Fact]
     public async Task ConfirmEmailAsync_WithInvalidUser_ShouldReturnFalse()
     {
         var userId = Guid.NewGuid().ToString();
-        var token = "confirmation-token";
+        _userRepository.GetUserByIdAsync(userId).Returns((User?)null);
 
-        _mockUserRepository
-            .Setup(x => x.GetUserByIdAsync(userId))
-            .ReturnsAsync((User?)null);
+        var result = await _authService.ConfirmEmailAsync(userId, "confirmation-token");
 
-        var result = await _authService.ConfirmEmailAsync(userId, token);
-
-        result.Should().BeFalse();
-        _mockUserRepository.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
-        _mockUserManager.Verify(x => x.ConfirmEmailAsync(It.IsAny<User>(), It.IsAny<string>()), Times.Never);
+        Assert.False(result);
+        await _userRepository.Received(1).GetUserByIdAsync(userId);
+        await _userManager.DidNotReceiveWithAnyArgs().ConfirmEmailAsync(default!, default!);
     }
 
     [Fact]
@@ -323,7 +227,6 @@ public class AuthServiceTests
     {
         var userId = Guid.NewGuid().ToString();
         var token = "invalid-token";
-
         var user = new User
         {
             Id = Guid.Parse(userId),
@@ -331,20 +234,14 @@ public class AuthServiceTests
             Email = "test@example.com",
             Role = Roles.Listener
         };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByIdAsync(userId))
-            .ReturnsAsync(user);
-
-        _mockUserManager
-            .Setup(x => x.ConfirmEmailAsync(user, token))
-            .ReturnsAsync(IdentityResult.Failed());
+        _userRepository.GetUserByIdAsync(userId).Returns(user);
+        _userManager.ConfirmEmailAsync(user, token).Returns(IdentityResult.Failed());
 
         var result = await _authService.ConfirmEmailAsync(userId, token);
 
-        result.Should().BeFalse();
-        _mockUserRepository.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
-        _mockUserManager.Verify(x => x.ConfirmEmailAsync(user, token), Times.Once);
-        _mockEmailService.Verify(x => x.SendWelcomeEmailAsync(It.IsAny<User>()), Times.Never);
+        Assert.False(result);
+        await _userRepository.Received(1).GetUserByIdAsync(userId);
+        await _userManager.Received(1).ConfirmEmailAsync(user, token);
+        await _emailService.DidNotReceiveWithAnyArgs().SendWelcomeEmailAsync(default!);
     }
 }

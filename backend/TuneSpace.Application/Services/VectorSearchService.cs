@@ -73,7 +73,7 @@ internal class VectorSearchService(
                 a.Location,
                 Description = a.Description?.Length > 200 ? a.Description[..200] + "..." : a.Description
             }),
-            RecommendationInsights = GenerateInsights(contextArtists, genres, location)
+            RecommendationInsights = GenerateInsights(contextArtists, location)
         };
 
         return JsonSerializer.Serialize(contextData, new JsonSerializerOptions { WriteIndented = true });
@@ -191,7 +191,7 @@ internal class VectorSearchService(
         };
     }
 
-    private static List<string> GenerateInsights(List<ArtistEmbedding> similarArtists, List<string> userGenres, string? location)
+    private static List<string> GenerateInsights(List<ArtistEmbedding> similarArtists, string? location)
     {
         var insights = new List<string>();
 

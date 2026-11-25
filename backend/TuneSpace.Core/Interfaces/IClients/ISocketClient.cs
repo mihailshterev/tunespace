@@ -1,6 +1,6 @@
+using TuneSpace.Core.DTOs.Responses.BandChat;
 using TuneSpace.Core.DTOs.Responses.Chat;
 using TuneSpace.Core.DTOs.Responses.Notification;
-using TuneSpace.Core.DTOs.Responses.BandChat;
 
 namespace TuneSpace.Core.Interfaces.IClients;
 

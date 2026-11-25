@@ -1,6 +1,6 @@
+using System.Collections.Concurrent;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.Extensions.Logging;
-using System.Collections.Concurrent;
 using TuneSpace.Core.DTOs.Responses.Spotify;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.Models;

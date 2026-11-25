@@ -1,10 +1,10 @@
 <div align="center">
 
-# 🎵 TuneSpace
+# TuneSpace
 
 ### _Discover the undiscovered. Connect with the underground._
 
-<img src="https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 9" />
+<img src="https://img.shields.io/badge/.NET-10.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 10" />
 <img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" />
 <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
 <img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
@@ -12,27 +12,27 @@
 
 ---
 
-**🎤 For Artists** • Showcase your music • Connect with fans • Manage events & merchandise
+**For Artists** • Showcase your music • Connect with fans • Manage events & merchandise
 
-**🎧 For Listeners** • Discover hidden gems • AI-powered recommendations • Underground music exploration
+**For Listeners** • Discover hidden gems • AI-powered recommendations • Underground music exploration
 
 ---
 
 </div>
 
-## 🌟 What is TuneSpace?
+## What is TuneSpace?
 
 A comprehensive music discovery platform designed to connect **independent underground artists** with **listeners seeking fresh, undiscovered talent**. TuneSpace bridges the gap between emerging musicians and music enthusiasts through intelligent discovery algorithms and vibrant community features.
 
-## 🎯 Mission
+## Mission
 
 **For Artists:** Provide independent underground artists with a powerful platform to register, showcase their music, and gain exposure to targeted audiences who appreciate emerging talent.
 
 **For Listeners:** Offer music enthusiasts an advanced discovery engine to find hidden gems and underground artists based on their listening preferences and location.
 
-## ✨ Key Features
+## Key Features
 
-### 🎤 Artist/Band Management
+### Artist/Band Management
 
 - **Band Registration & Profiles**: Complete artist profiles with bio, genre classification, location, and cover images
 - **Member Management**: Add and manage band members with role assignments
@@ -40,7 +40,7 @@ A comprehensive music discovery platform designed to connect **independent under
 - **Merchandise Integration**: Showcase and manage band merchandise
 - **YouTube Integration**: Embed music videos and performances
 
-### 🔍 Intelligent Music Discovery
+### Intelligent Music Discovery
 
 - **AI-Powered Recommendations**: Advanced recommendation engine using multiple algorithms:
   - Standard RAG (Retrieval Augmented Generation) AI
@@ -55,14 +55,14 @@ A comprehensive music discovery platform designed to connect **independent under
 - **Hipster & Underground Search**: Specialized algorithms to find emerging and lesser-known artists
 - **Genre Analysis**: Automatic genre enrichment based on listening history
 
-### 🎧 Spotify Integration
+### Spotify Integration
 
 - **OAuth Authentication**: Secure Spotify account linking
 - **Listening History Analysis**: Analyze recently played tracks, followed artists, and top artists
 - **Personalized Recommendations**: Leverage Spotify data for enhanced personalization
 - **Profile Synchronization**: Import Spotify profile data and listening statistics
 
-### 💬 Social & Community Features
+### Social & Community Features
 
 - **Forums System**:
   - Category-based discussions
@@ -77,22 +77,22 @@ A comprehensive music discovery platform designed to connect **independent under
 - **Band Following**: Follow favorite artists and get updates
 - **User Search**: Find and connect with other music enthusiasts
 
-### 🗺️ Location-Based Features
+### Location-Based Features
 
 - **Geographic Discovery**: Find local artists and events in your area
 - **Venue Mapping**: Interactive maps for event locations using Leaflet
 - **IP-based Location Detection**: Automatic location detection for relevant recommendations
 
-### 🔐 Authentication & Security
+### Authentication & Security
 
 - **JWT-based Authentication**: Secure token-based user authentication
 - **ASP.NET Core Identity**: Comprehensive user management with roles
 - **OAuth Integration**: Spotify external authentication
 - **Cookie-based Session Management**: Secure session handling
 
-## 🏗️ Technical Architecture
+## Technical Architecture
 
-### Backend (.NET 9)
+### Backend (.NET 10)
 
 - **Clean Architecture**: Organized into Core, Application, Infrastructure, and API layers
 - **Entity Framework Core**: Database ORM with PostgreSQL support
@@ -119,7 +119,7 @@ A comprehensive music discovery platform designed to connect **independent under
 - **Last.fm API**: Similar artists and enhanced metadata
 - **Countries API**: Location data for geographical features
 
-## 📁 Project Structure
+## Project Structure
 
 ```
 TuneSpace/
@@ -137,11 +137,11 @@ TuneSpace/
     └── public/                 # Static assets
 ```
 
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Backend**: .NET 9 SDK, PostgreSQL
+- **Backend**: .NET 10 SDK, PostgreSQL
 - **Frontend**: Node.js 24+, pnpm
 - **External APIs**: Spotify Developer Account
 
@@ -185,7 +185,7 @@ TuneSpace/
    pnpm dev
    ```
 
-## 🎵 Core Discovery Algorithm
+## Core Discovery Algorithm
 
 TuneSpace employs a sophisticated multi-stage recommendation engine:
 
@@ -222,7 +222,7 @@ TuneSpace employs a sophisticated multi-stage recommendation engine:
 - Relevance ranking and recommendation limits
 - Real-time caching for performance
 
-## 🗃️ Database Schema
+## Database Schema
 
 ### Core Entities
 
@@ -240,7 +240,7 @@ TuneSpace employs a sophisticated multi-stage recommendation engine:
 - Forum threads support nested post structures
 - Chat system supports both user-to-user and band-to-user communication
 
-## 🔮 Future Roadmap
+## Future Roadmap
 
 - **Music Streaming**: Direct music playback integration
 - **Advanced Analytics**: Artist performance insights and listener analytics

@@ -1,4 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
+	<ItemGroup>
+		<FrameworkReference Include="Microsoft.AspNetCore.App" />
+	</ItemGroup>
 	<ItemGroup>
 		<PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" />
 		<PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
@@ -7,8 +10,6 @@
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
 		</PackageReference>
 		<PackageReference Include="Microsoft.IdentityModel.Tokens" />
-		<PackageReference Include="System.Net.Http.Json" />
-		<PackageReference Include="Microsoft.AspNetCore.Http" />
 		<PackageReference Include="FluentEmail.Core" />
 		<PackageReference Include="FluentEmail.Smtp" />
     <PackageReference Include="Microsoft.ML.OnnxRuntime" />

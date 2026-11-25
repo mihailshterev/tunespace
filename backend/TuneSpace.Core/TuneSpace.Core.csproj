@@ -1,7 +1,6 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
     <ItemGroup>
       <PackageReference Include="Microsoft.AspNetCore.Identity.EntityFrameworkCore" />
-      <PackageReference Include="System.Net.Http.Json" />
       <PackageReference Include="Pgvector.EntityFrameworkCore" />
     </ItemGroup>
 </Project>

@@ -1,5 +1,5 @@
-using Microsoft.Extensions.Logging;
 using FluentEmail.Core;
+using Microsoft.Extensions.Logging;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.Models.Email;

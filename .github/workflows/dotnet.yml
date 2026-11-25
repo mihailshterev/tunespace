@@ -5,20 +5,27 @@ on:
     branches: [main]
     paths:
       - "backend/**"
+      - ".editorconfig"
+      - ".gitattributes"
       - ".github/workflows/dotnet.yml"
   pull_request:
     branches: [main]
     paths:
       - "backend/**"
+      - ".editorconfig"
+      - ".gitattributes"
       - ".github/workflows/dotnet.yml"
 
 env:
-  DOTNET_VERSION: "9.0.x"
-  SOLUTION_PATH: "./backend/TuneSpace.sln"
+  SOLUTION_PATH: "TuneSpace.slnx"
   BUILD_CONFIGURATION: "Release"
-  PUBLISH_PATH: "./backend/publish"
+  PUBLISH_PATH: "publish"
   Jwt__Secret: ${{ secrets.JWT_SECRET }}
   ConnectionStrings__DefaultConnection: ${{ secrets.DEFAULT_CONNECTION_STRING }}
+
+defaults:
+  run:
+    working-directory: backend
 
 jobs:
   build-and-test:
@@ -42,29 +49,29 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: ./backend/global.json
 
       - name: Install EF Core CLI
-        run: dotnet tool install --global dotnet-ef
+        run: dotnet tool install --global dotnet-ef --version 10.0.15
 
       - name: Restore NuGet packages
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Build
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-restore
 
       - name: Apply EF Core Migrations
-        run: dotnet ef database update --project ./backend/TuneSpace.Infrastructure/TuneSpace.Infrastructure.csproj --startup-project ./backend/TuneSpace.Api/TuneSpace.Api.csproj
+        run: dotnet ef database update --project TuneSpace.Infrastructure/TuneSpace.Infrastructure.csproj --startup-project TuneSpace.Api/TuneSpace.Api.csproj
         env:
           ConnectionStrings__DefaultConnection: ${{ secrets.DEFAULT_CONNECTION_STRING }}
 
       - name: Run tests
-        run: dotnet test ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build --verbosity normal
+        run: dotnet test --solution ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --no-build
         env:
           Jwt__Secret: ${{ secrets.JWT_SECRET }}
           ConnectionStrings__DefaultConnection: ${{ secrets.DEFAULT_CONNECTION_STRING }}
@@ -76,21 +83,18 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: ./backend/global.json
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Run code analysis
         run: dotnet build ${{ env.SOLUTION_PATH }} --configuration ${{ env.BUILD_CONFIGURATION }} --verbosity normal
-
-      - name: Install dotnet format
-        run: dotnet tool install -g dotnet-format
 
       - name: Check code formatting
         run: dotnet format ${{ env.SOLUTION_PATH }} --verify-no-changes --verbosity normal
@@ -102,15 +106,15 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: ./backend/global.json
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Run security audit
         run: dotnet list ${{ env.SOLUTION_PATH }} package --vulnerable --include-transitive
@@ -123,19 +127,19 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v6
 
       - name: Setup .NET
-        uses: actions/setup-dotnet@v4
+        uses: actions/setup-dotnet@v5
         with:
-          dotnet-version: ${{ env.DOTNET_VERSION }}
+          global-json-file: ./backend/global.json
 
       - name: Restore dependencies
-        run: dotnet restore ${{ env.SOLUTION_PATH }}
+        run: dotnet restore ${{ env.SOLUTION_PATH }} --locked-mode
 
       - name: Publish application
         run: |
-          dotnet publish ./backend/TuneSpace.Api/TuneSpace.Api.csproj \
+          dotnet publish TuneSpace.Api/TuneSpace.Api.csproj \
             --configuration ${{ env.BUILD_CONFIGURATION }} \
             --output ${{ env.PUBLISH_PATH }} \
             --no-restore \
@@ -146,5 +150,5 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: published-app
-          path: ${{ env.PUBLISH_PATH }}
+          path: backend/${{ env.PUBLISH_PATH }}
           retention-days: 30

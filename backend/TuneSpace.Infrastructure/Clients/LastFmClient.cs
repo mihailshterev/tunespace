@@ -1,11 +1,11 @@
-using Microsoft.Extensions.Options;
 using System.Text.Json;
-using TuneSpace.Core.Interfaces.IClients;
-using TuneSpace.Core.Models;
-using TuneSpace.Core.DTOs.Responses.LastFm;
-using TuneSpace.Infrastructure.Options;
+using Microsoft.Extensions.Options;
 using TuneSpace.Core.Common;
+using TuneSpace.Core.DTOs.Responses.LastFm;
+using TuneSpace.Core.Interfaces.IClients;
 using TuneSpace.Core.Interfaces.IInfrastructure;
+using TuneSpace.Core.Models;
+using TuneSpace.Infrastructure.Options;
 
 namespace TuneSpace.Infrastructure.Clients;
 

@@ -1,5 +1,4 @@
 using System.IdentityModel.Tokens.Jwt;
-using TuneSpace.Api.Extensions;
 using TuneSpace.Core.Interfaces.IServices;
 
 namespace TuneSpace.Api.Middleware;

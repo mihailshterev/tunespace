@@ -16,7 +16,7 @@ internal class SpotifyClient(HttpClient httpClient) : ISpotifyClient
 
     async Task<HttpResponseMessage> ISpotifyClient.GetUserInfo(string token)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "me");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "me");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
@@ -34,7 +34,7 @@ internal class SpotifyClient(HttpClient httpClient) : ISpotifyClient
             url += $"&before={before.Value}";
         }
 
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
@@ -47,42 +47,42 @@ internal class SpotifyClient(HttpClient httpClient) : ISpotifyClient
             url += $"&after={after}";
         }
 
-        var request = new HttpRequestMessage(HttpMethod.Get, url);
+        using var request = new HttpRequestMessage(HttpMethod.Get, url);
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
 
     async Task<HttpResponseMessage> ISpotifyClient.GetUserTopArtists(string token)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "me/top/artists?time_range=short_term&limit=5&offset=0");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "me/top/artists?time_range=short_term&limit=5&offset=0");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
 
     async Task<HttpResponseMessage> ISpotifyClient.GetUserTopSongs(string token)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, "me/top/tracks?time_range=short_term&limit=5&offset=0");
+        using var request = new HttpRequestMessage(HttpMethod.Get, "me/top/tracks?time_range=short_term&limit=5&offset=0");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
 
     async Task<HttpResponseMessage> ISpotifyClient.GetSongsBySearch(string token, string search)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"search?q={Uri.EscapeDataString(search)}&type=track&limit=5");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"search?q={Uri.EscapeDataString(search)}&type=track&limit=5");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
 
     async Task<HttpResponseMessage> ISpotifyClient.GetArtist(string token, string artistId)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"artists/{artistId}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"artists/{artistId}");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
 
     async Task<HttpResponseMessage> ISpotifyClient.GetSeveralArtists(string token, string artistIds)
     {
-        var request = new HttpRequestMessage(HttpMethod.Get, $"artists?ids={artistIds}");
+        using var request = new HttpRequestMessage(HttpMethod.Get, $"artists?ids={artistIds}");
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
@@ -109,7 +109,7 @@ internal class SpotifyClient(HttpClient httpClient) : ISpotifyClient
             requestUrl += $"&offset={offset}";
         }
 
-        var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
+        using var request = new HttpRequestMessage(HttpMethod.Get, requestUrl);
         SetAuthorizationHeader(request, token);
         return await _httpClient.SendAsync(request);
     }
