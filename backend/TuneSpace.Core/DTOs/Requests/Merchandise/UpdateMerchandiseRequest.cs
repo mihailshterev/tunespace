@@ -1,5 +1,3 @@
-using TuneSpace.Core.DTOs;
-
 namespace TuneSpace.Core.DTOs.Requests.Merchandise;
 
 public record UpdateMerchandiseRequest(

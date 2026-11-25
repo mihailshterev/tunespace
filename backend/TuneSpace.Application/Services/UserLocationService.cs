@@ -1,7 +1,7 @@
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
 using TuneSpace.Core.DTOs.Responses.MusicDiscovery;
 using TuneSpace.Core.Interfaces.IServices;
-using Microsoft.Extensions.Logging;
 
 namespace TuneSpace.Application.Services;
 

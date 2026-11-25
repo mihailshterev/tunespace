@@ -1,10 +1,10 @@
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
+using TuneSpace.Api.DTOs;
+using TuneSpace.Api.Extensions;
 using TuneSpace.Core.DTOs.Responses.User;
 using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IServices;
-using Microsoft.AspNetCore.Authorization;
-using TuneSpace.Api.DTOs;
-using TuneSpace.Api.Extensions;
 
 namespace TuneSpace.Api.Controllers;
 

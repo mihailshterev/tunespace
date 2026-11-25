@@ -1,5 +1,5 @@
-using TuneSpace.Core.Entities;
 using Pgvector;
+using TuneSpace.Core.Entities;
 
 namespace TuneSpace.Core.Interfaces.IRepositories;
 

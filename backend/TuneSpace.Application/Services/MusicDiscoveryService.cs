@@ -1,13 +1,13 @@
+using System.Collections.Concurrent;
+using System.Text.RegularExpressions;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using TuneSpace.Core.Common;
+using TuneSpace.Core.DTOs.Responses.Spotify;
+using TuneSpace.Core.Entities;
 using TuneSpace.Core.Interfaces.IClients;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.Models;
-using TuneSpace.Core.Common;
-using System.Collections.Concurrent;
-using Microsoft.Extensions.DependencyInjection;
-using TuneSpace.Core.Entities;
-using TuneSpace.Core.DTOs.Responses.Spotify;
-using Microsoft.Extensions.Logging;
-using System.Text.RegularExpressions;
 
 namespace TuneSpace.Application.Services;
 
@@ -24,7 +24,7 @@ namespace TuneSpace.Application.Services;
 ///    - AI recommendations (Enhanced AI or RAG)
 ///    - Collaborative filtering (user similarity)
 /// 4. Data Processing - Enriches raw data and generates similar artist recommendations
-/// 5. Scoring & Ranking - Applies adaptive scoring algorithms with confidence boosting
+/// 5. Scoring &amp; Ranking - Applies adaptive scoring algorithms with confidence boosting
 /// 6. Final Processing - Applies diversity algorithms, deduplication, and cooldown management
 /// </summary>
 internal class MusicDiscoveryService(
@@ -77,7 +77,7 @@ internal class MusicDiscoveryService(
         );
 
         var processedRecommendations = await ProcessAndEnrichRecommendationsAsync(
-            recommendationSources, userData.TopArtists, enrichedGenres
+            recommendationSources, userData.TopArtists
         );
 
         var scoredRecommendations = await ScoreAndRankRecommendationsAsync(
@@ -574,7 +574,7 @@ internal class MusicDiscoveryService(
     /// <summary>
     /// Step 4: Process and enrich the raw recommendations
     /// </summary>
-    private async Task<ProcessedRecommendations> ProcessAndEnrichRecommendationsAsync(RecommendationSources sources, List<SpotifyArtistDTO> topArtists, List<string> genres)
+    private async Task<ProcessedRecommendations> ProcessAndEnrichRecommendationsAsync(RecommendationSources sources, List<SpotifyArtistDTO> topArtists)
     {
         var enrichedLocalBands = await _dataEnrichmentService.EnrichMultipleBandsAsync(sources.LocalBands);
         var enrichedUndergroundArtists = await _dataEnrichmentService.EnrichMultipleBandsAsync(sources.UndergroundArtists);

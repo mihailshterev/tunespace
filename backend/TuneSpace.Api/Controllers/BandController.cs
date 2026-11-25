@@ -1,6 +1,6 @@
+using System.Security.Claims;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
-using System.Security.Claims;
 using TuneSpace.Api.DTOs;
 using TuneSpace.Api.Extensions;
 using TuneSpace.Application.Common;

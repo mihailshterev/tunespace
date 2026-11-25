@@ -1,12 +1,12 @@
 using Microsoft.Extensions.Logging;
+using TuneSpace.Core.Common;
 using TuneSpace.Core.DTOs.Responses.Spotify;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Interfaces.IClients;
+using TuneSpace.Core.Interfaces.IInfrastructure;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.Models;
-using TuneSpace.Core.Common;
-using TuneSpace.Core.Interfaces.IInfrastructure;
 
 namespace TuneSpace.Application.Services.MusicDiscovery;
 

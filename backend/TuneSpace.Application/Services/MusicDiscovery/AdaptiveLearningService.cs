@@ -1,8 +1,8 @@
-using Microsoft.Extensions.Logging;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
+using TuneSpace.Core.Entities;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Infrastructure.Data;
-using TuneSpace.Core.Entities;
 
 namespace TuneSpace.Application.Services.MusicDiscovery;
 

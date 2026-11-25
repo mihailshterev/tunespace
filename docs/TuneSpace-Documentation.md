@@ -35,7 +35,7 @@ TuneSpace is a full-stack music discovery and community platform built specifica
 
 The system is composed of two applications:
 
-- A **.NET 9 backend** that follows Clean Architecture and is split into four projects (API, Application, Core, Infrastructure) plus a dedicated test project. It exposes a REST API and a SignalR hub, persists data in PostgreSQL, and integrates with several external music services.
+- A **.NET 10 backend** that follows Clean Architecture and is split into four projects (API, Application, Core, Infrastructure) plus a dedicated test project. It exposes a REST API and a SignalR hub, persists data in PostgreSQL, and integrates with several external music services.
 - A **Vite / React 19 single-page frontend** written in TypeScript, using React Router, Tailwind CSS with shadcn/ui components, TanStack Query for data fetching, and Zustand for client-side state.
 
 The two halves communicate over HTTP (REST) for request/response operations and over WebSockets (SignalR) for real-time features such as chat and notifications.
@@ -161,7 +161,7 @@ The application is built on a modern stack chosen for scalability, performance, 
 | **ESLint 10 + typescript-eslint**             | Linting, including the React Hooks and React Compiler rules.                                                                                                                                                                                             |
 | Supporting libraries                          | Embla Carousel, React Day Picker, Sonner (toasts), date-fns, lucide-react / react-icons.                                                                                                                                                                 |
 
-### Backend (.NET 9)
+### Backend (.NET 10)
 
 | Technology                                 | Role                                                                                                              |
 | ------------------------------------------ | ----------------------------------------------------------------------------------------------------------------- |
@@ -319,7 +319,7 @@ Key config files: `next.config.ts`, `tailwind.config.ts`, `tsconfig.json`, `esli
 - `Services` - infrastructure services (`EmailTemplateService`, `UrlBuilderService`).
 - `Templates` - HTML email templates.
 
-**[`TuneSpace.Tests`](../backend/TuneSpace.Tests)** - automated tests for backend logic (xUnit, Moq, FluentAssertions).
+**[`TuneSpace.Tests`](../backend/TuneSpace.Tests)** - automated tests for backend logic (xUnit v3, NSubstitute).
 
 ---
 
@@ -552,7 +552,7 @@ The REST API is organized into twelve controllers under the `/api/[controller]` 
 
 ### Prerequisites
 
-- **Backend:** .NET 9 SDK, PostgreSQL (with the `pgvector` extension available).
+- **Backend:** .NET 10 SDK, PostgreSQL (with the `pgvector` extension available).
 - **Frontend:** Node.js 20+, pnpm.
 - **External:** a Spotify Developer account; a local Ollama instance running the `gemma3:1b` model for AI recommendations.
 
@@ -588,7 +588,7 @@ Configure the frontend `.env` (e.g. the API base URL) before starting.
 
 ## 17. Testing
 
-Backend logic is covered by the **[`TuneSpace.Tests`](../backend/TuneSpace.Tests)** project, which provides automated tests to ensure reliability and correctness. The test stack uses **xUnit** as the test framework, **Moq** for mocking dependencies, **FluentAssertions** for expressive assertions, and `Microsoft.AspNetCore.Mvc.Testing` for integration-style tests against the API.
+Backend logic is covered by the **[`TuneSpace.Tests`](../backend/TuneSpace.Tests)** project, which provides automated tests to ensure reliability and correctness. The test stack uses **xUnit v3** on Microsoft.Testing.Platform as the test framework, **NSubstitute** for mocking dependencies, and `Microsoft.AspNetCore.Mvc.Testing` for integration-style tests against the API.
 
 Run the suite with:
 
@@ -613,7 +613,7 @@ Planned enhancements that extend the platform's value:
 
 ## Conclusion
 
-TuneSpace demonstrates a complete, innovative, and technologically modern approach to building a music platform enriched with AI. It integrates a layered architecture - a Vite + React single-page app on the frontend, a .NET 9 API for backend logic, and PostgreSQL with `pgvector` for storage and vector processing - into a stable, scalable foundation.
+TuneSpace demonstrates a complete, innovative, and technologically modern approach to building a music platform enriched with AI. It integrates a layered architecture - a Vite + React single-page app on the frontend, a .NET 10 API for backend logic, and PostgreSQL with `pgvector` for storage and vector processing - into a stable, scalable foundation.
 
 By combining personalized AI recommendations, underground-artist discovery, and intelligent matching of musical tastes with vector search and advanced algorithms, and by layering real-time SignalR communication onto a responsive web interface, TuneSpace becomes a dynamic, interactive environment for both fans and artists. Built around clean code, modularity, and clean architecture - and integrating Spotify, Bandcamp, Last.fm, and more - it not only solves real needs of the music community but also shows how technology can enrich and transform the way we discover and experience music.
 

@@ -98,7 +98,7 @@ internal class DataEnrichmentService(
         bool isRegisteredBandSimilar)
     {
         var result = new Dictionary<string, List<BandModel>>(StringComparer.OrdinalIgnoreCase);
-        var semaphore = new SemaphoreSlim(3);
+        using var semaphore = new SemaphoreSlim(3);
         var tasks = new List<Task>();
 
         foreach (var artistName in artistNames)

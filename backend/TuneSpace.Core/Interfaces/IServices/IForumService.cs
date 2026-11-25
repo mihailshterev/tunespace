@@ -93,7 +93,7 @@ public interface IForumService
     /// Removes a user's like from a forum post
     /// </summary>
     /// <param name="postId">The ID of the post to unlike</param>
-    /// <param="userId">The ID of the user unliking the post</param>
+    /// <param name="userId">The ID of the user unliking the post</param>
     /// <returns>True if the post was successfully unliked, false otherwise</returns>
     Task<bool> UnlikePostAsync(Guid postId, Guid userId);
 }

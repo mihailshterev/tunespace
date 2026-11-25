@@ -1,26 +1,23 @@
-using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using TuneSpace.Application.Services;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
 using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
+using Xunit;
 
 namespace TuneSpace.Tests.Unit.Services;
 
 public class UserServiceTests
 {
-    private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<ILogger<UserService>> _mockLogger;
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IUserService _userService;
 
     public UserServiceTests()
     {
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockLogger = new Mock<ILogger<UserService>>();
-        _userService = new UserService(_mockUserRepository.Object, _mockLogger.Object);
+        _userService = new UserService(_userRepository, NullLogger<UserService>.Instance);
     }
 
     [Fact]
@@ -34,30 +31,24 @@ public class UserServiceTests
             Email = "test@example.com",
             Role = Roles.Listener
         };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByIdAsync(userId))
-            .ReturnsAsync(expectedUser);
+        _userRepository.GetUserByIdAsync(userId).Returns(expectedUser);
 
         var result = await _userService.GetUserByIdAsync(userId);
 
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(expectedUser);
-        _mockUserRepository.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
+        Assert.Same(expectedUser, result);
+        await _userRepository.Received(1).GetUserByIdAsync(userId);
     }
 
     [Fact]
     public async Task GetUserByIdAsync_WithInvalidId_ShouldReturnNull()
     {
         var userId = Guid.NewGuid().ToString();
-        _mockUserRepository
-            .Setup(x => x.GetUserByIdAsync(userId))
-            .ReturnsAsync((User?)null);
+        _userRepository.GetUserByIdAsync(userId).Returns((User?)null);
 
         var result = await _userService.GetUserByIdAsync(userId);
 
-        result.Should().BeNull();
-        _mockUserRepository.Verify(x => x.GetUserByIdAsync(userId), Times.Once);
+        Assert.Null(result);
+        await _userRepository.Received(1).GetUserByIdAsync(userId);
     }
 
     [Fact]
@@ -71,37 +62,31 @@ public class UserServiceTests
             Email = "test@example.com",
             Role = Roles.Listener
         };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(userName))
-            .ReturnsAsync(expectedUser);
+        _userRepository.GetUserByNameAsync(userName).Returns(expectedUser);
 
         var result = await _userService.GetUserByNameAsync(userName);
 
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(expectedUser);
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(userName), Times.Once);
+        Assert.Same(expectedUser, result);
+        await _userRepository.Received(1).GetUserByNameAsync(userName);
     }
 
     [Fact]
     public async Task GetUserByNameAsync_WithInvalidName_ShouldReturnNull()
     {
         var userName = "nonexistentuser";
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(userName))
-            .ReturnsAsync((User?)null);
+        _userRepository.GetUserByNameAsync(userName).Returns((User?)null);
 
         var result = await _userService.GetUserByNameAsync(userName);
 
-        result.Should().BeNull();
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(userName), Times.Once);
+        Assert.Null(result);
+        await _userRepository.Received(1).GetUserByNameAsync(userName);
     }
 
     [Fact]
     public async Task GetProfilePictureAsync_WithValidUser_ShouldReturnProfilePicture()
     {
         var userName = "testuser";
-        var profilePicture = new byte[] { 1, 2, 3, 4, 5 };
+        byte[] profilePicture = [1, 2, 3, 4, 5];
         var user = new User
         {
             Id = Guid.NewGuid(),
@@ -110,31 +95,24 @@ public class UserServiceTests
             Role = Roles.Listener,
             ProfilePicture = profilePicture
         };
-
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(userName))
-            .ReturnsAsync(user);
+        _userRepository.GetUserByNameAsync(userName).Returns(user);
 
         var result = await _userService.GetProfilePictureAsync(userName);
 
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(profilePicture);
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(userName), Times.Once);
+        Assert.Equal(profilePicture, result);
+        await _userRepository.Received(1).GetUserByNameAsync(userName);
     }
 
     [Fact]
     public async Task GetProfilePictureAsync_WithNonExistentUser_ShouldThrowNotFoundException()
     {
         var userName = "nonexistentuser";
-        _mockUserRepository
-            .Setup(x => x.GetUserByNameAsync(userName))
-            .ReturnsAsync((User?)null);
+        _userRepository.GetUserByNameAsync(userName).Returns((User?)null);
 
-        var exception = await Assert.ThrowsAsync<NotFoundException>(
-            () => _userService.GetProfilePictureAsync(userName));
+        var exception = await Assert.ThrowsAsync<NotFoundException>(() => _userService.GetProfilePictureAsync(userName));
 
-        exception.Message.Should().Contain($"User not found: {userName}");
-        _mockUserRepository.Verify(x => x.GetUserByNameAsync(userName), Times.Once);
+        Assert.Contains($"User not found: {userName}", exception.Message);
+        await _userRepository.Received(1).GetUserByNameAsync(userName);
     }
 
     [Fact]
@@ -148,17 +126,13 @@ public class UserServiceTests
             new() { Id = Guid.Parse(currentUserId), UserName = "testuser2", Email = "test2@example.com", Role = Roles.Listener },
             new() { Id = Guid.NewGuid(), UserName = "testuser3", Email = "test3@example.com", Role = Roles.Listener }
         };
-
-        _mockUserRepository
-            .Setup(x => x.SearchByNameAsync(searchName))
-            .ReturnsAsync(users);
+        _userRepository.SearchByNameAsync(searchName).Returns(users);
 
         var result = await _userService.SearchByNameAsync(searchName, currentUserId);
 
-        result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result.Should().NotContain(u => u.Id.ToString() == currentUserId);
-        _mockUserRepository.Verify(x => x.SearchByNameAsync(searchName), Times.Once);
+        Assert.Equal(2, result.Count);
+        Assert.DoesNotContain(result, u => u.Id.ToString() == currentUserId);
+        await _userRepository.Received(1).SearchByNameAsync(searchName);
     }
 
     [Fact]
@@ -166,16 +140,12 @@ public class UserServiceTests
     {
         var searchName = "nonexistent";
         var currentUserId = Guid.NewGuid().ToString();
-
-        _mockUserRepository
-            .Setup(x => x.SearchByNameAsync(searchName))
-            .ReturnsAsync(new List<User>());
+        _userRepository.SearchByNameAsync(searchName).Returns(new List<User>());
 
         var result = await _userService.SearchByNameAsync(searchName, currentUserId);
 
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
-        _mockUserRepository.Verify(x => x.SearchByNameAsync(searchName), Times.Once);
+        Assert.Empty(result);
+        await _userRepository.Received(1).SearchByNameAsync(searchName);
     }
 
     [Fact]
@@ -187,16 +157,11 @@ public class UserServiceTests
             new() { Id = Guid.NewGuid(), UserName = "testuser1", Email = "test1@example.com", Role = Roles.Listener },
             new() { Id = Guid.NewGuid(), UserName = "testuser2", Email = "test2@example.com", Role = Roles.Listener }
         };
-
-        _mockUserRepository
-            .Setup(x => x.SearchByNameAsync(searchName))
-            .ReturnsAsync(users);
+        _userRepository.SearchByNameAsync(searchName).Returns(users);
 
         var result = await _userService.SearchByNameAsync(searchName, null);
 
-        result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result.Should().BeEquivalentTo(users);
-        _mockUserRepository.Verify(x => x.SearchByNameAsync(searchName), Times.Once);
+        Assert.Equal(users, result);
+        await _userRepository.Received(1).SearchByNameAsync(searchName);
     }
 }

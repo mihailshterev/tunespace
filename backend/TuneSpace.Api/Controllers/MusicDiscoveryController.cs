@@ -1,10 +1,10 @@
+using System.Net;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using TuneSpace.Api.Extensions;
-using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Core.DTOs.Requests.MusicDiscovery;
 using TuneSpace.Core.DTOs.Responses.MusicDiscovery;
-using System.Net;
+using TuneSpace.Core.Interfaces.IServices;
 
 namespace TuneSpace.Api.Controllers;
 

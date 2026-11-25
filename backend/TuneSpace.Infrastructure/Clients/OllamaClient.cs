@@ -21,7 +21,7 @@ internal class OllamaClient(HttpClient httpClient) : IOllamaClient
         };
 
         string json = JsonSerializer.Serialize(requestData);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync(GenerateEndpoint, content);
         response.EnsureSuccessStatusCode();
@@ -40,7 +40,7 @@ internal class OllamaClient(HttpClient httpClient) : IOllamaClient
         };
 
         string json = JsonSerializer.Serialize(requestData);
-        var content = new StringContent(json, Encoding.UTF8, "application/json");
+        using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
         var response = await _httpClient.PostAsync(GenerateEndpoint, content);
         response.EnsureSuccessStatusCode();

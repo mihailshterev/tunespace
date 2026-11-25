@@ -1,63 +1,23 @@
-using FluentAssertions;
-using Microsoft.AspNetCore.Mvc.Testing;
 using System.Net;
-using System.Text.Json;
+using Microsoft.AspNetCore.Mvc.Testing;
+using Xunit;
 
 namespace TuneSpace.Tests.Integration;
 
-public class UserControllerIntegrationTests : IClassFixture<WebApplicationFactory<Program>>
+public class UserControllerIntegrationTests(WebApplicationFactory<Program> factory) : IClassFixture<WebApplicationFactory<Program>>
 {
-    private readonly WebApplicationFactory<Program> _factory;
-    private readonly HttpClient _client;
-    private readonly JsonSerializerOptions _jsonOptions;
+    private readonly HttpClient _client = factory.CreateClient();
 
-    public UserControllerIntegrationTests(WebApplicationFactory<Program> factory)
+    [Theory]
+    [InlineData("/api/User/testuser")]
+    [InlineData("/api/User/search/test")]
+    [InlineData("/api/User/search/")]
+    [InlineData("/api/User/testuser/profile-picture")]
+    [InlineData("/api/User/testuser/profile")]
+    public async Task ProtectedEndpoint_WithoutAuthorization_ShouldReturnUnauthorized(string url)
     {
-        _factory = factory;
-        _client = _factory.CreateClient();
-        _jsonOptions = new JsonSerializerOptions
-        {
-            PropertyNamingPolicy = JsonNamingPolicy.CamelCase
-        };
-    }
+        var response = await _client.GetAsync(url, TestContext.Current.CancellationToken);
 
-    [Fact]
-    public async Task GetUserByName_WithoutAuthorization_ShouldReturnUnauthorized()
-    {
-        var response = await _client.GetAsync("/api/User/testuser");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetUsersBySearch_WithoutAuthorization_ShouldReturnUnauthorized()
-    {
-        var response = await _client.GetAsync("/api/User/search/test");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetProfilePicture_WithoutAuthorization_ShouldReturnUnauthorized()
-    {
-        var response = await _client.GetAsync("/api/User/testuser/profile-picture");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetUserProfile_WithoutAuthorization_ShouldReturnUnauthorized()
-    {
-        var response = await _client.GetAsync("/api/User/testuser/profile");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
-    }
-
-    [Fact]
-    public async Task GetUsersBySearch_WithEmptySearch_ShouldReturnUnauthorized()
-    {
-        var response = await _client.GetAsync("/api/User/search/");
-
-        response.StatusCode.Should().Be(HttpStatusCode.Unauthorized);
+        Assert.Equal(HttpStatusCode.Unauthorized, response.StatusCode);
     }
 }

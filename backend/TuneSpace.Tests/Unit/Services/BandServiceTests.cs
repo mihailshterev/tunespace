@@ -1,29 +1,23 @@
-using FluentAssertions;
-using Microsoft.Extensions.Logging;
-using Moq;
+using Microsoft.Extensions.Logging.Abstractions;
+using NSubstitute;
 using TuneSpace.Application.Services;
-using TuneSpace.Core.DTOs.Responses.Band;
-using TuneSpace.Core.DTOs.Responses.User;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
+using Xunit;
 
 namespace TuneSpace.Tests.Unit.Services;
 
 public class BandServiceTests
 {
-    private readonly Mock<IBandRepository> _mockBandRepository;
-    private readonly Mock<IUserRepository> _mockUserRepository;
-    private readonly Mock<ILogger<BandService>> _mockLogger;
+    private readonly IBandRepository _bandRepository = Substitute.For<IBandRepository>();
+    private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
     private readonly IBandService _bandService;
 
     public BandServiceTests()
     {
-        _mockBandRepository = new Mock<IBandRepository>();
-        _mockUserRepository = new Mock<IUserRepository>();
-        _mockLogger = new Mock<ILogger<BandService>>();
-        _bandService = new BandService(_mockBandRepository.Object, _mockUserRepository.Object, _mockLogger.Object);
+        _bandService = new BandService(_bandRepository, _userRepository, NullLogger<BandService>.Instance);
     }
 
     [Fact]
@@ -38,49 +32,45 @@ public class BandServiceTests
             Genre = "Rock",
             Country = "USA",
             City = "New York",
-            CoverImage = new byte[] { 1, 2, 3 },
+            CoverImage = [1, 2, 3],
             SpotifyId = "spotify123",
             YouTubeEmbedId = "youtube123",
-            Members = new List<User>
-            {
-                new() { Id = Guid.NewGuid(), UserName = "member1", ProfilePicture = new byte[] { 4, 5, 6 } },
+            Members =
+            [
+                new() { Id = Guid.NewGuid(), UserName = "member1", ProfilePicture = [4, 5, 6] },
                 new() { Id = Guid.NewGuid(), UserName = "member2", ProfilePicture = null }
-            }
+            ]
         };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync(band);
+        _bandRepository.GetBandByIdAsync(bandId).Returns(band);
 
         var result = await _bandService.GetBandByIdAsync(bandId);
 
-        result.Should().NotBeNull();
-        result!.Id.Should().Be(bandId.ToString());
-        result.Name.Should().Be("Test Band");
-        result.Description.Should().Be("A test band");
-        result.Genre.Should().Be("Rock");
-        result.Country.Should().Be("USA");
-        result.City.Should().Be("New York");
-        result.CoverImage.Should().BeEquivalentTo(new byte[] { 1, 2, 3 });
-        result.SpotifyId.Should().Be("spotify123");
-        result.YouTubeEmbedId.Should().Be("youtube123"); result.Members.Should().HaveCount(2);
-        result.Members!.First().Name.Should().Be("member1");
-
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.NotNull(result);
+        Assert.Equal(bandId.ToString(), result.Id);
+        Assert.Equal("Test Band", result.Name);
+        Assert.Equal("A test band", result.Description);
+        Assert.Equal("Rock", result.Genre);
+        Assert.Equal("USA", result.Country);
+        Assert.Equal("New York", result.City);
+        Assert.Equal([1, 2, 3], result.CoverImage);
+        Assert.Equal("spotify123", result.SpotifyId);
+        Assert.Equal("youtube123", result.YouTubeEmbedId);
+        Assert.NotNull(result.Members);
+        Assert.Equal(2, result.Members.Count);
+        Assert.Equal("member1", result.Members.First().Name);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     [Fact]
     public async Task GetBandByIdAsync_WithInvalidId_ShouldReturnNull()
     {
         var bandId = Guid.NewGuid();
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync((Band?)null);
+        _bandRepository.GetBandByIdAsync(bandId).Returns((Band?)null);
 
         var result = await _bandService.GetBandByIdAsync(bandId);
 
-        result.Should().BeNull();
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Null(result);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     [Fact]
@@ -96,33 +86,27 @@ public class BandServiceTests
             Country = "USA",
             City = "New York"
         };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByNameAsync(bandName))
-            .ReturnsAsync(band);
+        _bandRepository.GetBandByNameAsync(bandName).Returns(band);
 
         var result = await _bandService.GetBandByNameAsync(bandName);
 
-        result.Should().NotBeNull();
-        result!.Name.Should().Be(bandName);
-        result.Description.Should().Be("A test band");
-        result.Genre.Should().Be("Rock");
-
-        _mockBandRepository.Verify(x => x.GetBandByNameAsync(bandName), Times.Once);
+        Assert.NotNull(result);
+        Assert.Equal(bandName, result.Name);
+        Assert.Equal("A test band", result.Description);
+        Assert.Equal("Rock", result.Genre);
+        await _bandRepository.Received(1).GetBandByNameAsync(bandName);
     }
 
     [Fact]
     public async Task GetBandByNameAsync_WithInvalidName_ShouldReturnNull()
     {
         var bandName = "Non-existent Band";
-        _mockBandRepository
-            .Setup(x => x.GetBandByNameAsync(bandName))
-            .ReturnsAsync((Band?)null);
+        _bandRepository.GetBandByNameAsync(bandName).Returns((Band?)null);
 
         var result = await _bandService.GetBandByNameAsync(bandName);
 
-        result.Should().BeNull();
-        _mockBandRepository.Verify(x => x.GetBandByNameAsync(bandName), Times.Once);
+        Assert.Null(result);
+        await _bandRepository.Received(1).GetBandByNameAsync(bandName);
     }
 
     [Fact]
@@ -138,94 +122,68 @@ public class BandServiceTests
             Country = "Canada",
             City = "Toronto"
         };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByUserIdAsync(userId))
-            .ReturnsAsync(band);
+        _bandRepository.GetBandByUserIdAsync(userId).Returns(band);
 
         var result = await _bandService.GetBandByUserIdAsync(userId);
 
-        result.Should().NotBeNull();
-        result!.Name.Should().Be("User's Band");
-        result.Description.Should().Be("Band owned by user");
-        result.Genre.Should().Be("Pop");
-
-        _mockBandRepository.Verify(x => x.GetBandByUserIdAsync(userId), Times.Once);
+        Assert.NotNull(result);
+        Assert.Equal("User's Band", result.Name);
+        Assert.Equal("Band owned by user", result.Description);
+        Assert.Equal("Pop", result.Genre);
+        await _bandRepository.Received(1).GetBandByUserIdAsync(userId);
     }
 
     [Fact]
     public async Task GetBandByUserIdAsync_WithInvalidUserId_ShouldReturnNull()
     {
         var userId = Guid.NewGuid().ToString();
-        _mockBandRepository
-            .Setup(x => x.GetBandByUserIdAsync(userId))
-            .ReturnsAsync((Band?)null);
+        _bandRepository.GetBandByUserIdAsync(userId).Returns((Band?)null);
 
         var result = await _bandService.GetBandByUserIdAsync(userId);
 
-        result.Should().BeNull();
-        _mockBandRepository.Verify(x => x.GetBandByUserIdAsync(userId), Times.Once);
+        Assert.Null(result);
+        await _bandRepository.Received(1).GetBandByUserIdAsync(userId);
     }
 
     [Fact]
     public async Task GetBandImageAsync_WithValidBandId_ShouldReturnImageData()
     {
         var bandId = Guid.NewGuid();
-        var imageData = new byte[] { 1, 2, 3, 4, 5 };
-        var band = new Band
-        {
-            Id = bandId,
-            Name = "Test Band",
-            Genre = "Rock",
-            CoverImage = imageData
-        };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync(band);
+        byte[] imageData = [1, 2, 3, 4, 5];
+        var band = new Band { Id = bandId, Name = "Test Band", Genre = "Rock", CoverImage = imageData };
+        _bandRepository.GetBandByIdAsync(bandId).Returns(band);
 
         var result = await _bandService.GetBandImageAsync(bandId);
 
-        result.Should().NotBeNull();
-        result.Should().BeEquivalentTo(imageData);
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Equal(imageData, result);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     [Fact]
     public async Task GetBandImageAsync_WithBandWithoutImage_ShouldReturnNull()
     {
         var bandId = Guid.NewGuid();
-        var band = new Band
-        {
-            Id = bandId,
-            Name = "Test Band",
-            Genre = "Rock",
-            CoverImage = null
-        };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync(band);
+        var band = new Band { Id = bandId, Name = "Test Band", Genre = "Rock", CoverImage = null };
+        _bandRepository.GetBandByIdAsync(bandId).Returns(band);
 
         var result = await _bandService.GetBandImageAsync(bandId);
 
-        result.Should().BeNull();
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Null(result);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     [Fact]
     public async Task GetBandImageAsync_WithInvalidBandId_ShouldReturnNull()
     {
         var bandId = Guid.NewGuid();
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync((Band?)null);
+        _bandRepository.GetBandByIdAsync(bandId).Returns((Band?)null);
 
         var result = await _bandService.GetBandImageAsync(bandId);
 
-        result.Should().BeNull();
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Null(result);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
+
     [Fact]
     public async Task GetBandMembersAsync_WithValidBandId_ShouldReturnMembersList()
     {
@@ -235,50 +193,32 @@ public class BandServiceTests
             Id = bandId,
             Name = "Test Band",
             Genre = "Rock",
-            Members = new List<User>
-            {
+            Members =
+            [
                 new() { Id = Guid.NewGuid(), UserName = "member1", Email = "member1@test.com", Role = Roles.BandMember },
                 new() { Id = Guid.NewGuid(), UserName = "member2", Email = "member2@test.com", Role = Roles.BandAdmin },
                 new() { Id = Guid.NewGuid(), UserName = "member3", Email = "member3@test.com", Role = Roles.BandMember }
-            }
+            ]
         };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync(band);
+        _bandRepository.GetBandByIdAsync(bandId).Returns(band);
 
         var result = await _bandService.GetBandMembersAsync(bandId);
 
-        result.Should().NotBeNull();
-        result.Should().HaveCount(3);
-        result[0].Name.Should().Be("member1");
-        result[1].Name.Should().Be("member2");
-        result[2].Name.Should().Be("member3");
-
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Equal(["member1", "member2", "member3"], result.Select(m => m.Name));
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     [Fact]
     public async Task GetBandMembersAsync_WithBandWithoutMembers_ShouldReturnEmptyArray()
     {
         var bandId = Guid.NewGuid();
-        var band = new Band
-        {
-            Id = bandId,
-            Name = "Test Band",
-            Genre = "Rock",
-            Members = new List<User>()
-        };
-
-        _mockBandRepository
-            .Setup(x => x.GetBandByIdAsync(bandId))
-            .ReturnsAsync(band);
+        var band = new Band { Id = bandId, Name = "Test Band", Genre = "Rock", Members = [] };
+        _bandRepository.GetBandByIdAsync(bandId).Returns(band);
 
         var result = await _bandService.GetBandMembersAsync(bandId);
 
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
-        _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
+        Assert.Empty(result);
+        await _bandRepository.Received(1).GetBandByIdAsync(bandId);
     }
 
     private (User user, Band band) SetupUserAndBand(Roles role, bool isMember)
@@ -289,11 +229,11 @@ public class BandServiceTests
             Id = Guid.NewGuid(),
             Name = "Test Band",
             Genre = "Rock",
-            Members = isMember ? new List<User> { user } : new List<User>()
+            Members = isMember ? [user] : []
         };
 
-        _mockUserRepository.Setup(x => x.GetUserByIdAsync(user.Id.ToString())).ReturnsAsync(user);
-        _mockBandRepository.Setup(x => x.GetBandByIdAsync(band.Id)).ReturnsAsync(band);
+        _userRepository.GetUserByIdAsync(user.Id.ToString()).Returns(user);
+        _bandRepository.GetBandByIdAsync(band.Id).Returns(band);
 
         return (user, band);
     }
@@ -311,17 +251,17 @@ public class BandServiceTests
 
         var result = await _bandService.CanManageBandAsync(user.Id, band.Id);
 
-        result.Should().Be(expected);
+        Assert.Equal(expected, result);
     }
 
     [Fact]
     public async Task CanManageBandAsync_WithUnknownUser_ShouldReturnFalse()
     {
-        _mockUserRepository.Setup(x => x.GetUserByIdAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+        _userRepository.GetUserByIdAsync(Arg.Any<string>()).Returns((User?)null);
 
         var result = await _bandService.CanManageBandAsync(Guid.NewGuid(), Guid.NewGuid());
 
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -331,7 +271,7 @@ public class BandServiceTests
 
         var result = await _bandService.CanManageBandAsync(user.Id, Guid.NewGuid());
 
-        result.Should().BeFalse();
+        Assert.False(result);
     }
 
     [Fact]
@@ -341,9 +281,9 @@ public class BandServiceTests
 
         await _bandService.AddMemberToBandAsync(user.Id, band.Id);
 
-        band.Members.Should().Contain(user);
-        user.Role.Should().Be(Roles.BandMember);
-        _mockUserRepository.Verify(x => x.UpdateUserAsync(user), Times.Once);
+        Assert.Contains(user, band.Members);
+        Assert.Equal(Roles.BandMember, user.Role);
+        await _userRepository.Received(1).UpdateUserAsync(user);
     }
 
     [Theory]
@@ -355,9 +295,9 @@ public class BandServiceTests
 
         await _bandService.AddMemberToBandAsync(user.Id, band.Id);
 
-        band.Members.Should().Contain(user);
-        user.Role.Should().Be(role);
-        _mockUserRepository.Verify(x => x.UpdateUserAsync(It.IsAny<User>()), Times.Never);
+        Assert.Contains(user, band.Members);
+        Assert.Equal(role, user.Role);
+        await _userRepository.DidNotReceiveWithAnyArgs().UpdateUserAsync(default!);
     }
 
     [Fact]
@@ -367,7 +307,7 @@ public class BandServiceTests
 
         await _bandService.AddMemberToBandAsync(user.Id, band.Id);
 
-        band.Members.Should().HaveCount(1);
-        _mockBandRepository.Verify(x => x.UpdateBandAsync(It.IsAny<Band>()), Times.Never);
+        Assert.Single(band.Members);
+        await _bandRepository.DidNotReceiveWithAnyArgs().UpdateBandAsync(default!);
     }
 }

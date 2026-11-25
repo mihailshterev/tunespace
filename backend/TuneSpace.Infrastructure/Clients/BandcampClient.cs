@@ -1,9 +1,9 @@
 using System.Text;
 using System.Text.Json;
+using Microsoft.Extensions.Logging;
+using TuneSpace.Core.DTOs.Responses.Bandcamp;
 using TuneSpace.Core.Interfaces.IClients;
 using TuneSpace.Core.Models;
-using TuneSpace.Core.DTOs.Responses.Bandcamp;
-using Microsoft.Extensions.Logging;
 
 namespace TuneSpace.Infrastructure.Clients;
 
@@ -217,7 +217,7 @@ internal class BandcampClient(
         try
         {
             var json = JsonSerializer.Serialize(requestBody);
-            var content = new StringContent(json, Encoding.UTF8, "application/json");
+            using var content = new StringContent(json, Encoding.UTF8, "application/json");
 
             var response = await _httpClient.PostAsync(ApiUrl, content);
             response.EnsureSuccessStatusCode();
