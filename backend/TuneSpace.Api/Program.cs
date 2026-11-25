@@ -61,6 +61,9 @@ using (var scope = app.Services.CreateScope())
     var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
     var roleSeeder = new RoleSeeder(roleManager);
     await roleSeeder.SeedRolesAsync();
+
+    var adminSeeder = ActivatorUtilities.CreateInstance<AdminSeeder>(services);
+    await adminSeeder.SeedAdminsAsync();
 }
 
 // Configure the HTTP request pipeline.

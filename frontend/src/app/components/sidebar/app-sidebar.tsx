@@ -20,11 +20,16 @@ import {
   DiscAlbum,
   User,
   AudioLines,
+  ShieldCheck,
 } from "lucide-react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import useAuth from "@/shared/auth/hooks/useAuth";
 import { ROUTES } from "@/shared/utils/constants";
-import { BAND_DASHBOARD_ROLES, hasRole } from "@/shared/auth/permissions";
+import {
+  ADMIN_ROLES,
+  BAND_DASHBOARD_ROLES,
+  hasRole,
+} from "@/shared/auth/permissions";
 import useLogout from "@/shared/auth/hooks/useLogout";
 import { cn } from "@/shared/utils/cn";
 import useProfileData from "@/features/profile/hooks/useProfileData";
@@ -36,7 +41,6 @@ type NavLinkItem = {
   to: string;
   text: string;
   icon: ReactNode;
-  group: "navigation" | "content";
 };
 
 export function AppSidebar() {
@@ -69,14 +73,12 @@ export function AppSidebar() {
       to: ROUTES.HOME,
       text: "Home",
       icon: <Home className="h-4 w-4" />,
-      group: "navigation",
     },
     {
       id: 3,
       to: ROUTES.DISCOVER,
       text: "Discover",
       icon: <AudioLines className="h-4 w-4" />,
-      group: "navigation",
     },
   ];
 
@@ -87,7 +89,6 @@ export function AppSidebar() {
     to: canAccessBandDashboard ? ROUTES.BAND_DASHBOARD : ROUTES.BAND_REGISTER,
     text: canAccessBandDashboard ? "Band Dashboard" : "Create Band",
     icon: <DiscAlbum className="h-4 w-4" />,
-    group: "navigation",
   };
 
   const contentLinks: NavLinkItem[] = [
@@ -96,85 +97,90 @@ export function AppSidebar() {
       to: ROUTES.NEWS,
       text: "News",
       icon: <Newspaper className="h-4 w-4" />,
-      group: "content",
     },
     {
       id: 6,
       to: ROUTES.EVENTS,
       text: "Events",
       icon: <CalendarDays className="h-4 w-4" />,
-      group: "content",
     },
     {
       id: 7,
       to: "/forums",
       text: "Forums",
       icon: <Users className="h-4 w-4" />,
-      group: "content",
     },
     {
       id: 8,
       to: "/messages",
       text: "Messages",
       icon: <MessageSquare className="h-4 w-4" />,
-      group: "content",
     },
   ];
 
   const allNavigationLinks = [...navigationLinks, bandDashboardLink];
 
-  const renderNavLinks = (group: "navigation" | "content") => {
-    const links = group === "navigation" ? allNavigationLinks : contentLinks;
+  const adminLinks: NavLinkItem[] = hasRole(auth?.role, ADMIN_ROLES)
+    ? [
+        {
+          id: 9,
+          to: ROUTES.ADMIN_USERS,
+          text: "User Management",
+          icon: <ShieldCheck className="h-4 w-4" />,
+        },
+      ]
+    : [];
 
-    return links.map((link) => {
-      const isActive = pathname === link.to;
+  // Nested pages (e.g. a forum thread) keep their section highlighted.
+  const isLinkActive = (to: string) =>
+    pathname === to || pathname.startsWith(`${to}/`);
+
+  // The Sidebar root is itself a Tailwind `group`, so these rows use a named
+  // group (`group/nav`); a bare `group-hover:` would light up every row whenever
+  // the pointer was anywhere over the sidebar.
+  const renderNavLinks = (links: NavLinkItem[]) =>
+    links.map((link) => {
+      const isActive = isLinkActive(link.to);
 
       return (
         <SidebarMenuItem key={link.id}>
-          <Link to={link.to}>
-            <SidebarMenuButton
-              tooltip={link.text}
-              isActive={isActive}
-              className={cn(
-                "transition-all duration-300 relative overflow-visible rounded-md",
-                "group border border-transparent",
-                "hover:border-indigo-500/20 hover:animate-[border-pulse-subtle_1.5s_ease_infinite]",
-                isActive &&
-                  "bg-gradient-to-r from-sidebar-accent to-sidebar-accent/30 font-medium",
-              )}
-            >
-              <div
+          <SidebarMenuButton
+            asChild
+            tooltip={link.text}
+            isActive={isActive}
+            className={cn(
+              "group/nav relative rounded-md border border-transparent transition-all duration-300",
+              "hover:border-indigo-500/20",
+              isActive &&
+                "border-indigo-500/20 bg-gradient-to-r from-sidebar-accent to-sidebar-accent/30",
+            )}
+          >
+            <Link to={link.to}>
+              <span
+                aria-hidden
                 className={cn(
-                  "absolute inset-y-0 w-1 left-0 rounded-full transition-all duration-300",
+                  "absolute inset-y-1.5 left-0 w-1 rounded-full transition-colors duration-300",
                   isActive
                     ? "bg-indigo-500 shadow-[0_0_8px_rgba(var(--sidebar-primary-rgb),0.5)]"
-                    : "bg-transparent group-hover:bg-indigo-500/30",
+                    : "bg-transparent group-hover/nav:bg-indigo-500/30",
                 )}
               />
-              <div
+              <span
                 className={cn(
-                  "relative z-10 flex items-center gap-2",
-                  "transition-colors duration-300",
+                  "shrink-0 transition-colors duration-300",
+                  isActive
+                    ? "text-indigo-100"
+                    : "text-indigo-200/80 group-hover/nav:text-indigo-300",
                 )}
               >
-                <span
-                  className={cn(
-                    "text-indigo-200/80 transition-colors duration-300",
-                    isActive
-                      ? "text-indigo-100"
-                      : "group-hover:text-indigo-300",
-                  )}
-                >
-                  {link.icon}
-                </span>
-                <span>{link.text}</span>
-              </div>
-            </SidebarMenuButton>
-          </Link>
+                {link.icon}
+              </span>
+              <span>{link.text}</span>
+            </Link>
+          </SidebarMenuButton>
         </SidebarMenuItem>
       );
     });
-  };
 
   return (
     <Sidebar
@@ -233,25 +239,38 @@ export function AppSidebar() {
           />
         </div>
       </div>
-      <SidebarSeparator className="bg-gradient-to-r from-indigo-500/5 via-indigo-500/20 to-indigo-500/5 h-px my-2" />{" "}
+      <SidebarSeparator className="bg-gradient-to-r from-indigo-500/5 via-indigo-500/20 to-indigo-500/5 h-px my-2" />
       <SidebarContent>
         <SidebarGroup className="animate-[fade-in_0.4s_ease_forwards] opacity-0">
           <SidebarGroupLabel className="text-indigo-100/70 font-semibold">
             Music & Management
           </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderNavLinks("navigation")}</SidebarMenu>
+            <SidebarMenu>{renderNavLinks(allNavigationLinks)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
         <SidebarSeparator className="bg-indigo-300/10" />
         <SidebarGroup className="animate-[fade-in_0.5s_ease_forwards] opacity-0">
           <SidebarGroupLabel className="text-indigo-100/70 font-semibold">
             Content
-          </SidebarGroupLabel>{" "}
+          </SidebarGroupLabel>
           <SidebarGroupContent>
-            <SidebarMenu>{renderNavLinks("content")}</SidebarMenu>
+            <SidebarMenu>{renderNavLinks(contentLinks)}</SidebarMenu>
           </SidebarGroupContent>
         </SidebarGroup>
+        {adminLinks.length > 0 && (
+          <>
+            <SidebarSeparator className="bg-indigo-300/10" />
+            <SidebarGroup className="animate-[fade-in_0.55s_ease_forwards] opacity-0">
+              <SidebarGroupLabel className="text-indigo-100/70 font-semibold">
+                Administration
+              </SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>{renderNavLinks(adminLinks)}</SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </>
+        )}
       </SidebarContent>
       <SidebarFooter>
         <SidebarGroup className="animate-[fade-in_0.6s_ease_forwards] opacity-0">
@@ -260,14 +279,15 @@ export function AppSidebar() {
               <SidebarMenuItem>
                 <SidebarMenuButton
                   tooltip="Log Out"
-                  className="transition-all duration-300 relative overflow-visible rounded-md group border border-transparent hover:border-red-500/20 hover:animate-[border-pulse-subtle_1.5s_ease_infinite] text-red-400 hover:text-red-300 focus:text-red-300"
+                  className="group/nav relative rounded-md border border-transparent transition-all duration-300 text-red-400 hover:border-red-500/20 hover:text-red-300 focus-visible:text-red-300"
                   onClick={handleLogout}
                 >
-                  <div className="absolute inset-y-0 w-1 left-0 rounded-full transition-all duration-300 bg-transparent group-hover:bg-red-500/30" />
-                  <div className="relative z-10 flex items-center gap-2 transition-colors duration-300">
-                    <LogOut className="h-4 w-4" />
-                    <span>Log Out</span>
-                  </div>
+                  <span
+                    aria-hidden
+                    className="absolute inset-y-1.5 left-0 w-1 rounded-full bg-transparent transition-colors duration-300 group-hover/nav:bg-red-500/30"
+                  />
+                  <LogOut className="h-4 w-4" />
+                  <span>Log Out</span>
                 </SidebarMenuButton>
               </SidebarMenuItem>
             </SidebarMenu>

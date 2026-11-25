@@ -1,7 +1,7 @@
+using TuneSpace.Application.Common;
 using TuneSpace.Core.DTOs.Requests.Forum;
 using TuneSpace.Core.DTOs.Responses.Forum;
 using TuneSpace.Core.Entities;
-using TuneSpace.Core.Enums;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 
@@ -126,18 +126,13 @@ internal class ForumService(
             return null;
         }
 
-        var bandAdmin = band.Members.FirstOrDefault(m => m.Role == Roles.BandAdmin);
+        // A band's threads are those written by anyone who manages it, so they survive a change of band admin.
+        var managerIds = band.Members
+            .Where(m => BandMembershipRules.IsManagerRole(m.Role))
+            .Select(m => m.Id)
+            .ToList();
 
-        if (bandAdmin == null)
-        {
-            return null;
-        }
-
-        var threads = await _forumRepository.GetThreadsByAuthorId(bandAdmin?.Id ?? Guid.Empty);
-        if (threads == null)
-        {
-            return null;
-        }
+        var threads = await _forumRepository.GetThreadsByAuthorIds(managerIds);
 
         return [.. threads.Select(t => new ThreadResponse(
             t.Id,

@@ -3,6 +3,8 @@ using NSubstitute;
 using TuneSpace.Application.Services;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
+using TuneSpace.Core.Exceptions;
+using TuneSpace.Core.Interfaces.IInfrastructure;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 using Xunit;
@@ -13,11 +15,18 @@ public class BandServiceTests
 {
     private readonly IBandRepository _bandRepository = Substitute.For<IBandRepository>();
     private readonly IUserRepository _userRepository = Substitute.For<IUserRepository>();
+    private readonly IUnitOfWork _unitOfWork = Substitute.For<IUnitOfWork>();
+    private readonly IUserAccessStateProvider _accessStateProvider = Substitute.For<IUserAccessStateProvider>();
     private readonly IBandService _bandService;
 
     public BandServiceTests()
     {
-        _bandService = new BandService(_bandRepository, _userRepository, NullLogger<BandService>.Instance);
+        _unitOfWork.ExecuteInTransactionAsync(Arg.Any<Func<Task>>()).Returns(ci => ci.Arg<Func<Task>>()());
+        _userRepository
+            .When(r => r.UpdateUserRoleAsync(Arg.Any<User>(), Arg.Any<Roles>()))
+            .Do(ci => ci.Arg<User>().Role = ci.Arg<Roles>());
+
+        _bandService = new BandService(_bandRepository, _userRepository, _unitOfWork, _accessStateProvider, NullLogger<BandService>.Instance);
     }
 
     [Fact]
@@ -275,39 +284,270 @@ public class BandServiceTests
     }
 
     [Fact]
+    public async Task CanManageBandAsync_WithSuspendedBandAdmin_ShouldReturnFalse()
+    {
+        var (user, band) = SetupUserAndBand(Roles.BandAdmin, isMember: true);
+        user.LockoutEnd = DateTimeOffset.MaxValue;
+
+        Assert.False(await _bandService.CanManageBandAsync(user.Id, band.Id));
+    }
+
+    // ---- Membership helpers ----
+
+    private User AddUser(Roles role, string name = "member")
+    {
+        var user = new User { Id = Guid.NewGuid(), UserName = name, Role = role };
+        _userRepository.GetUserByIdAsync(user.Id.ToString()).Returns(user);
+        return user;
+    }
+
+    private Band AddBand(params User[] members)
+    {
+        var band = new Band { Id = Guid.NewGuid(), Name = "Test Band", Genre = "Rock", Members = [.. members] };
+        _bandRepository.GetBandByIdAsync(band.Id).Returns(band);
+        foreach (var member in members)
+        {
+            _bandRepository.GetBandByUserIdAsync(member.Id.ToString()).Returns(band);
+        }
+        return band;
+    }
+
+    // ---- Add member ----
+
+    [Fact]
     public async Task AddMemberToBandAsync_WithListener_ShouldAddAndPromoteToBandMember()
     {
-        var (user, band) = SetupUserAndBand(Roles.Listener, isMember: false);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+        var user = AddUser(Roles.Listener);
 
         await _bandService.AddMemberToBandAsync(user.Id, band.Id);
 
         Assert.Contains(user, band.Members);
         Assert.Equal(Roles.BandMember, user.Role);
-        await _userRepository.Received(1).UpdateUserAsync(user);
+        await _bandRepository.Received(1).UpdateBandAsync(band);
+        _accessStateProvider.Received().Invalidate(user.Id);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithSiteAdmin_ShouldKeepAdminRole()
+    {
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+        var admin = AddUser(Roles.Admin);
+
+        await _bandService.AddMemberToBandAsync(admin.Id, band.Id);
+
+        Assert.Contains(admin, band.Members);
+        Assert.Equal(Roles.Admin, admin.Role);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithStaleBandRoleButNoBand_ShouldNormaliseToBandMember()
+    {
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+        var user = AddUser(Roles.BandAdmin);
+
+        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
+
+        Assert.Equal(Roles.BandMember, user.Role);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithExistingMember_ShouldThrowConflict()
+    {
+        var user = AddUser(Roles.BandMember);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), user);
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.AddMemberToBandAsync(user.Id, band.Id));
+        Assert.Equal(2, band.Members.Count);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithMemberOfAnotherBand_ShouldThrowConflict()
+    {
+        var user = AddUser(Roles.BandMember);
+        AddBand(AddUser(Roles.BandAdmin, "other leader"), user);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.AddMemberToBandAsync(user.Id, band.Id));
+        Assert.DoesNotContain(user, band.Members);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithSuspendedUser_ShouldThrowConflict()
+    {
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+        var user = AddUser(Roles.Listener);
+        user.LockoutEnd = DateTimeOffset.MaxValue;
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.AddMemberToBandAsync(user.Id, band.Id));
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithUnknownBand_ShouldThrowNotFound()
+    {
+        var user = AddUser(Roles.Listener);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _bandService.AddMemberToBandAsync(user.Id, Guid.NewGuid()));
+    }
+
+    // ---- Remove member / leave ----
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithMember_ShouldRemoveAndReturnToListener()
+    {
+        var member = AddUser(Roles.BandMember);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), member);
+
+        await _bandService.RemoveMemberAsync(band.Id, member.Id);
+
+        Assert.DoesNotContain(member, band.Members);
+        Assert.Equal(Roles.Listener, member.Role);
+        _accessStateProvider.Received().Invalidate(member.Id);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithSiteAdminMember_ShouldKeepAdminRole()
+    {
+        var admin = AddUser(Roles.Admin);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), admin);
+
+        await _bandService.RemoveMemberAsync(band.Id, admin.Id);
+
+        Assert.Equal(Roles.Admin, admin.Role);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithOneOfTwoManagers_ShouldSucceed()
+    {
+        var coLeader = AddUser(Roles.BandAdmin, "co-leader");
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), coLeader);
+
+        await _bandService.RemoveMemberAsync(band.Id, coLeader.Id);
+
+        Assert.Equal(Roles.Listener, coLeader.Role);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithSoleManager_ShouldThrowConflict()
+    {
+        var leader = AddUser(Roles.BandAdmin, "leader");
+        var band = AddBand(leader, AddUser(Roles.BandMember));
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.RemoveMemberAsync(band.Id, leader.Id));
+        Assert.Contains(leader, band.Members);
+        Assert.Equal(Roles.BandAdmin, leader.Role);
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithOnlyMember_ShouldThrowConflict()
+    {
+        var leader = AddUser(Roles.BandAdmin, "leader");
+        var band = AddBand(leader);
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.RemoveMemberAsync(band.Id, leader.Id));
+    }
+
+    [Fact]
+    public async Task RemoveMemberAsync_WithNonMember_ShouldThrowNotFound()
+    {
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"));
+        var outsider = AddUser(Roles.Listener);
+
+        await Assert.ThrowsAsync<NotFoundException>(() => _bandService.RemoveMemberAsync(band.Id, outsider.Id));
+    }
+
+    // ---- Member roles within a band ----
+
+    [Fact]
+    public async Task SetMemberRoleAsync_PromoteMember_ShouldMakeBandAdmin()
+    {
+        var member = AddUser(Roles.BandMember);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), member);
+
+        await _bandService.SetMemberRoleAsync(band.Id, member.Id, Roles.BandAdmin);
+
+        Assert.Equal(Roles.BandAdmin, member.Role);
+    }
+
+    [Fact]
+    public async Task SetMemberRoleAsync_DemoteSoleManager_ShouldThrowConflict()
+    {
+        var leader = AddUser(Roles.BandAdmin, "leader");
+        var band = AddBand(leader, AddUser(Roles.BandMember));
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.SetMemberRoleAsync(band.Id, leader.Id, Roles.BandMember));
+        Assert.Equal(Roles.BandAdmin, leader.Role);
     }
 
     [Theory]
     [InlineData(Roles.Admin)]
-    [InlineData(Roles.BandAdmin)]
-    public async Task AddMemberToBandAsync_WithElevatedRole_ShouldNotDemoteUser(Roles role)
+    [InlineData(Roles.Listener)]
+    public async Task SetMemberRoleAsync_WithNonBandRole_ShouldThrowConflict(Roles role)
     {
-        var (user, band) = SetupUserAndBand(role, isMember: false);
+        var member = AddUser(Roles.BandMember);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), member);
 
-        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
-
-        Assert.Contains(user, band.Members);
-        Assert.Equal(role, user.Role);
-        await _userRepository.DidNotReceiveWithAnyArgs().UpdateUserAsync(default!);
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.SetMemberRoleAsync(band.Id, member.Id, role));
+        Assert.Equal(Roles.BandMember, member.Role);
     }
 
     [Fact]
-    public async Task AddMemberToBandAsync_WithExistingMember_ShouldNotAddAgain()
+    public async Task SetMemberRoleAsync_OnSiteAdmin_ShouldThrowConflict()
     {
-        var (user, band) = SetupUserAndBand(Roles.BandMember, isMember: true);
+        var admin = AddUser(Roles.Admin);
+        var band = AddBand(AddUser(Roles.BandAdmin, "leader"), admin);
 
-        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.SetMemberRoleAsync(band.Id, admin.Id, Roles.BandMember));
+        Assert.Equal(Roles.Admin, admin.Role);
+    }
 
-        Assert.Single(band.Members);
-        await _bandRepository.DidNotReceiveWithAnyArgs().UpdateBandAsync(default!);
+    // ---- Create / delete ----
+
+    [Fact]
+    public async Task CreateBandAsync_WithMemberOfAnotherBand_ShouldThrowConflict()
+    {
+        var user = AddUser(Roles.BandMember);
+        AddBand(AddUser(Roles.BandAdmin, "leader"), user);
+
+        await Assert.ThrowsAsync<ConflictException>(() => _bandService.CreateBandAsync(
+            new(user.Id.ToString(), "New Band", "desc", "Rock", "Bulgaria, Sofia", null)));
+        await _bandRepository.DidNotReceiveWithAnyArgs().InsertBandAsync(default!);
+    }
+
+    [Theory]
+    [InlineData(Roles.Listener, Roles.BandAdmin)]
+    [InlineData(Roles.Admin, Roles.Admin)]
+    public async Task CreateBandAsync_ShouldAssignCreatorRole(Roles initialRole, Roles expectedRole)
+    {
+        var user = AddUser(initialRole);
+
+        var result = await _bandService.CreateBandAsync(
+            new(user.Id.ToString(), "New Band", "desc", "Rock", "Bulgaria, Sofia", null));
+
+        Assert.NotNull(result);
+        Assert.Equal(expectedRole, user.Role);
+        await _bandRepository.Received(1).InsertBandAsync(Arg.Is<Band>(b => b.Members.Contains(user)));
+    }
+
+    [Fact]
+    public async Task DeleteBandAsync_ShouldReturnMembersToNonBandRoles()
+    {
+        var leader = AddUser(Roles.BandAdmin, "leader");
+        var member = AddUser(Roles.BandMember);
+        var admin = AddUser(Roles.Admin, "site admin");
+        var band = AddBand(leader, member, admin);
+
+        await _bandService.DeleteBandAsync(band.Id);
+
+        Assert.Equal(Roles.Listener, leader.Role);
+        Assert.Equal(Roles.Listener, member.Role);
+        Assert.Equal(Roles.Admin, admin.Role);
+        await _bandRepository.Received(1).DeleteBandAsync(band.Id);
+    }
+
+    [Fact]
+    public async Task DeleteBandAsync_WithUnknownBand_ShouldThrowNotFound()
+    {
+        await Assert.ThrowsAsync<NotFoundException>(() => _bandService.DeleteBandAsync(Guid.NewGuid()));
     }
 }

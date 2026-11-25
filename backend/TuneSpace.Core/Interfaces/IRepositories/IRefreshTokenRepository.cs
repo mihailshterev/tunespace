@@ -63,4 +63,11 @@ public interface IRefreshTokenRepository
     /// <param name="token">The refresh token string to check revocation status for.</param>
     /// <returns>True if the token is revoked, otherwise false.</returns>
     Task<bool> IsRevokedAsync(string token);
+
+    /// <summary>
+    /// Revokes every active refresh token belonging to a user, ending all of their sessions.
+    /// </summary>
+    /// <param name="userId">The user whose tokens should be revoked.</param>
+    /// <returns>The number of tokens revoked.</returns>
+    Task<int> RevokeAllForUserAsync(Guid userId);
 }

@@ -1,3 +1,4 @@
+using TuneSpace.Core.Enums;
 using TuneSpace.Core.DTOs.Requests.Band;
 using TuneSpace.Core.DTOs.Responses.Band;
 using TuneSpace.Core.DTOs.Responses.User;
@@ -59,16 +60,32 @@ public interface IBandService
     Task UpdateBandAsync(UpdateBandRequest request);
 
     /// <summary>
-    /// Adds a user as a member to a specific band.
+    /// Adds a user to a band and gives them the BandMember role (site admins keep Admin).
     /// </summary>
     /// <param name="userId">The unique identifier of the user to add as a member.</param>
     /// <param name="bandId">The unique identifier of the band to which the user will be added.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="Exceptions.NotFoundException">The band or user does not exist.</exception>
+    /// <exception cref="Exceptions.ConflictException">The user is suspended, already in this band, or belongs to another band.</exception>
     Task AddMemberToBandAsync(Guid userId, Guid bandId);
 
     /// <summary>
+    /// Removes a member from a band (or lets them leave) and returns them to Listener (site admins keep Admin).
+    /// Callers must check permission: band managers may remove anyone; members may remove themselves.
+    /// </summary>
+    /// <exception cref="Exceptions.NotFoundException">The band does not exist or the user is not a member.</exception>
+    /// <exception cref="Exceptions.ConflictException">The user is the band's only member or only manager.</exception>
+    Task RemoveMemberAsync(Guid bandId, Guid userId);
+
+    /// <summary>
+    /// Changes a member's role within their band between BandAdmin and BandMember. Callers must check the actor can manage the band.
+    /// </summary>
+    /// <exception cref="Exceptions.NotFoundException">The band does not exist or the user is not a member.</exception>
+    /// <exception cref="Exceptions.ConflictException">The role isn't a band role, the member is a site admin, or the change would leave the band without a manager.</exception>
+    Task SetMemberRoleAsync(Guid bandId, Guid userId, Roles role);
+
+    /// <summary>
     /// Determines whether a user may manage a band: edit its profile, change its members or delete it.
-    /// Site admins may manage any band; band admins only bands they belong to.
+    /// Site admins may manage any band; band admins only bands they belong to. Suspended users manage nothing.
     /// The role is read from the database, so it stays correct even when the caller's access token is stale.
     /// </summary>
     /// <param name="userId">The unique identifier of the user attempting the action.</param>
@@ -77,9 +94,10 @@ public interface IBandService
     Task<bool> CanManageBandAsync(Guid userId, Guid bandId);
 
     /// <summary>
-    /// Deletes a band from the system.
+    /// Deletes a band with its events, merchandise, chats and follows, and returns every member to
+    /// Listener (site admins keep Admin).
     /// </summary>
     /// <param name="id">The unique identifier of the band to delete.</param>
-    /// <returns>A task representing the asynchronous operation.</returns>
+    /// <exception cref="Exceptions.NotFoundException">The band does not exist.</exception>
     Task DeleteBandAsync(Guid id);
 }

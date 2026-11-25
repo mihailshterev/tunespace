@@ -5,7 +5,7 @@ import { LandingLayout } from "../layouts/landing-layout";
 import { ProtectedRoute } from "../guards/protected-route";
 import { RedirectIfAuthenticated } from "../guards/redirect-if-authenticated";
 import { RequireRole } from "../guards/require-role";
-import { BAND_DASHBOARD_ROLES } from "@/shared/auth/permissions";
+import { ADMIN_ROLES, BAND_DASHBOARD_ROLES } from "@/shared/auth/permissions";
 import { ROUTES } from "@/shared/utils/constants";
 import { NotFoundPage } from "./not-found-page";
 import { EventsPage } from "./events-page";
@@ -46,6 +46,7 @@ import {
   BandRegisterView,
   BandShowcaseView,
 } from "@/features/band";
+import { UserManagementView } from "@/features/admin";
 
 export const routes: RouteObject[] = [
   {
@@ -125,6 +126,14 @@ export const routes: RouteObject[] = [
       { path: "band/register", element: <BandRegisterView /> },
       { path: "band/:bandId", element: <BandShowcaseView /> },
       { path: "band/:bandId/chat/:id", element: <BandChatView /> },
+      {
+        path: "admin/users",
+        element: (
+          <RequireRole roles={ADMIN_ROLES} redirectTo={ROUTES.HOME}>
+            <UserManagementView />
+          </RequireRole>
+        ),
+      },
     ],
   },
   { path: "*", element: <NotFoundPage /> },

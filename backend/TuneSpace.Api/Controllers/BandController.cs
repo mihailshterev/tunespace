@@ -6,6 +6,8 @@ using TuneSpace.Api.Extensions;
 using TuneSpace.Application.Common;
 using TuneSpace.Core.DTOs.Requests.Band;
 using TuneSpace.Core.DTOs.Responses.User;
+using TuneSpace.Core.Enums;
+using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IServices;
 
 namespace TuneSpace.Api.Controllers;
@@ -112,12 +114,6 @@ public class BandController(
         {
             var userId = User.GetUserId().ToString();
 
-            // Creating a band promotes the creator to BandAdmin, so a member of another band would gain admin rights over it.
-            if (await _bandService.GetBandByUserIdAsync(userId) is not null)
-            {
-                return Conflict("You already belong to a band");
-            }
-
             var fileDto = await Helpers.ConvertToFileDto(request.Picture);
 
             var createBandRequest = new CreateBandRequest(
@@ -137,6 +133,10 @@ public class BandController(
             }
 
             return Ok(band.Id);
+        }
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
         }
         catch (Exception e)
         {
@@ -171,6 +171,14 @@ public class BandController(
 
             await _bandService.AddMemberToBandAsync(parsedUserId, parsedBandId);
             return Ok("Member added successfully");
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
         }
         catch (Exception e)
         {
@@ -236,10 +244,74 @@ public class BandController(
             await _bandService.DeleteBandAsync(parsedBandId);
             return Ok("Band deleted successfully");
         }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
         catch (Exception e)
         {
             _logger.LogError(e, "Error deleting band with ID: {BandId}", LoggingExtensions.SanitizeForLogging(bandId));
             return BadRequest();
+        }
+    }
+
+    /// <summary>
+    /// Removes a member from a band. Band managers may remove anyone; any member may remove themselves (leave).
+    /// </summary>
+    [HttpDelete("{bandId:guid}/members/{userId:guid}")]
+    [Authorize]
+    public async Task<IActionResult> RemoveMember(Guid bandId, Guid userId)
+    {
+        try
+        {
+            var actorId = User.GetUserId();
+            if (actorId != userId && !await _bandService.CanManageBandAsync(actorId, bandId))
+            {
+                return Forbid();
+            }
+
+            await _bandService.RemoveMemberAsync(bandId, userId);
+            return NoContent();
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
+        }
+    }
+
+    /// <summary>
+    /// Makes a member a Band Admin or a Band Member. Only band managers may do this.
+    /// </summary>
+    [HttpPut("{bandId:guid}/members/{userId:guid}/role")]
+    [Authorize]
+    public async Task<IActionResult> SetMemberRole(Guid bandId, Guid userId, [FromBody] UpdateMemberRoleRequest request)
+    {
+        if (request is null || !Enum.TryParse<Roles>(request.Role, true, out var role) || !Enum.IsDefined(role))
+        {
+            return BadRequest("Invalid role specified");
+        }
+
+        try
+        {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), bandId))
+            {
+                return Forbid();
+            }
+
+            await _bandService.SetMemberRoleAsync(bandId, userId, role);
+            return NoContent();
+        }
+        catch (NotFoundException e)
+        {
+            return NotFound(e.Message);
+        }
+        catch (ConflictException e)
+        {
+            return Conflict(e.Message);
         }
     }
 

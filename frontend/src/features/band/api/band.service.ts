@@ -1,4 +1,5 @@
 import type Band from "@/features/band/types/band";
+import type { BandRole } from "@/features/band/types/band";
 import { ENDPOINTS } from "@/shared/utils/constants";
 import httpClient from "@/shared/api/http-client";
 
@@ -19,6 +20,24 @@ export const addMemberToBand = async (bandId: string, userId: string) => {
     bandId,
     userId,
   });
+};
+
+export const removeBandMember = async (bandId: string, userId: string) => {
+  await httpClient.delete(`${ENDPOINTS.BAND}/${bandId}/members/${userId}`);
+};
+
+export const setBandMemberRole = async (
+  bandId: string,
+  userId: string,
+  role: BandRole,
+) => {
+  await httpClient.put(`${ENDPOINTS.BAND}/${bandId}/members/${userId}/role`, {
+    role,
+  });
+};
+
+export const deleteBand = async (bandId: string) => {
+  await httpClient.delete(`${ENDPOINTS.BAND}/${bandId}`);
 };
 
 export const followBand = async (bandId: string) => {

@@ -162,6 +162,29 @@ public class AuthServiceTests
     }
 
     [Fact]
+    public async Task LoginAsync_WithSuspendedAccount_ShouldThrowUnauthorizedException()
+    {
+        var email = "test@example.com";
+        var password = "Password123!";
+        var user = new User
+        {
+            Id = Guid.NewGuid(),
+            UserName = "testuser",
+            Email = email,
+            Role = Roles.Listener,
+            PasswordHash = "hashed-password",
+            LockoutEnd = DateTimeOffset.MaxValue
+        };
+        _userRepository.GetUserByEmailAsync(email).Returns(user);
+        _passwordHasher.VerifyHashedPassword(user, user.PasswordHash, password).Returns(PasswordVerificationResult.Success);
+
+        var exception = await Assert.ThrowsAsync<UnauthorizedException>(() => _authService.LoginAsync(email, password));
+
+        Assert.Contains("suspended", exception.Message);
+        _tokenService.DidNotReceiveWithAnyArgs().GenerateAccessToken(default!);
+    }
+
+    [Fact]
     public async Task LoginAsync_WithUnconfirmedEmail_ShouldThrowUnauthorizedException()
     {
         var email = "test@example.com";

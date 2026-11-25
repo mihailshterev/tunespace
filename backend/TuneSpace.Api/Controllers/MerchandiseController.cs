@@ -13,10 +13,31 @@ namespace TuneSpace.Api.Controllers;
 [Authorize]
 public class MerchandiseController(
     IMerchandiseService merchandiseService,
+    IBandService bandService,
     ILogger<MerchandiseController> logger) : ControllerBase
 {
     private readonly IMerchandiseService _merchandiseService = merchandiseService;
+    private readonly IBandService _bandService = bandService;
     private readonly ILogger<MerchandiseController> _logger = logger;
+
+    /// <summary>
+    /// Resolves whether the caller may change an existing item: null when allowed, otherwise the result to return.
+    /// </summary>
+    private async Task<IActionResult?> AuthorizeItemChangeAsync(Guid merchandiseId)
+    {
+        var existing = await _merchandiseService.GetMerchandiseByIdAsync(merchandiseId);
+        if (existing is null)
+        {
+            return NotFound("Merchandise not found");
+        }
+
+        if (!Guid.TryParse(existing.BandId, out var bandId) || !await _bandService.CanManageBandAsync(User.GetUserId(), bandId))
+        {
+            return Forbid();
+        }
+
+        return null;
+    }
 
     [HttpGet("{merchandiseId}")]
     public async Task<IActionResult> GetMerchandiseById(string merchandiseId)
@@ -107,12 +128,22 @@ public class MerchandiseController(
     [HttpPost("create")]
     public async Task<IActionResult> CreateMerchandise([FromForm] MerchandiseCreateRequest request)
     {
+        if (!Guid.TryParse(request.BandId, out var bandId))
+        {
+            return BadRequest("Invalid Band ID format");
+        }
+
         try
         {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), bandId))
+            {
+                return Forbid();
+            }
+
             var fileDto = await Helpers.ConvertToFileDto(request.Image);
 
             var createMerchandiseRequest = new CreateMerchandiseRequest(
-                Guid.Parse(request.BandId),
+                bandId,
                 request.Name,
                 request.Description,
                 decimal.Parse(request.Price),
@@ -138,12 +169,22 @@ public class MerchandiseController(
     [HttpPut("update")]
     public async Task<IActionResult> UpdateMerchandise([FromForm] MerchandiseUpdateRequest request)
     {
+        if (!Guid.TryParse(request.Id, out var merchandiseId))
+        {
+            return BadRequest("Invalid Merchandise ID format");
+        }
+
         try
         {
+            if (await AuthorizeItemChangeAsync(merchandiseId) is { } denied)
+            {
+                return denied;
+            }
+
             var fileDto = await Helpers.ConvertToFileDto(request.Image);
 
             var updateMerchandiseRequest = new UpdateMerchandiseRequest(
-                Guid.Parse(request.Id),
+                merchandiseId,
                 request.Name,
                 request.Description,
                 decimal.Parse(request.Price!),
@@ -175,6 +216,11 @@ public class MerchandiseController(
 
         try
         {
+            if (await AuthorizeItemChangeAsync(parsedMerchandiseId) is { } denied)
+            {
+                return denied;
+            }
+
             await _merchandiseService.DeleteMerchandiseAsync(parsedMerchandiseId);
             return Ok("Merchandise deleted successfully");
         }

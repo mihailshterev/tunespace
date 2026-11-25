@@ -87,6 +87,7 @@ A comprehensive music discovery platform designed to connect **independent under
 
 - **JWT-based Authentication**: Secure token-based user authentication
 - **ASP.NET Core Identity**: Comprehensive user management with roles
+- **Admin User Management**: Search users, assign roles, and suspend or restore accounts
 - **OAuth Integration**: Spotify external authentication
 - **Cookie-based Session Management**: Secure session handling
 
@@ -168,6 +169,12 @@ TuneSpace/
 6. Start the API:
    ```bash
    dotnet run --project TuneSpace.Api
+   ```
+7. (Optional) Bootstrap the first administrator. Register the account normally, then list its email
+   and restart the API; it is promoted to Admin at startup. From then on, admins manage roles and
+   suspensions from **Administration → User Management** in the app.
+   ```bash
+   dotnet user-secrets set "Admin:BootstrapEmails:0" "you@example.com" --project TuneSpace.Api
    ```
 
 ### Frontend Setup

@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using Microsoft.AspNetCore.Identity;
 using TuneSpace.Core.Enums;
 
@@ -11,4 +12,11 @@ public class User : IdentityUser<Guid>
     public string? ExternalProvider { get; set; }
     public DateTime? ExternalLoginLinkedAt { get; set; }
     public DateTime LastActiveDate { get; set; } = DateTime.UtcNow;
+
+    /// <summary>
+    /// Suspension is stored as an Identity lockout; sign-in does not use failed-attempt lockout,
+    /// so an active lockout always means an administrator suspended the account.
+    /// </summary>
+    [NotMapped]
+    public bool IsSuspended => LockoutEnd.HasValue && LockoutEnd.Value > DateTimeOffset.UtcNow;
 }

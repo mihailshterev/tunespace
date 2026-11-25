@@ -1,3 +1,4 @@
+using TuneSpace.Core.Models;
 using TuneSpace.Core.Entities;
 
 namespace TuneSpace.Core.Interfaces.IRepositories;
@@ -76,4 +77,11 @@ public interface IBandRepository
     /// <param name="id">The unique identifier of the band to delete.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task DeleteBandAsync(Guid id);
+
+    /// <summary>
+    /// Retrieves member and manager counts for the given bands.
+    /// </summary>
+    /// <param name="bandIds">The bands to summarise; unknown IDs are omitted from the result.</param>
+    /// <returns>Summaries keyed by band ID.</returns>
+    Task<Dictionary<Guid, BandSummary>> GetBandSummariesAsync(IReadOnlyCollection<Guid> bandIds);
 }
