@@ -122,7 +122,7 @@ internal class TokenService(
         await _refreshTokenRepository.UpdateAsync(existingToken);
 
         var user = await _userRepository.GetUserByIdAsync(existingToken.UserId.ToString());
-        if (user is null)
+        if (user is null || user.IsSuspended)
         {
             return null;
         }

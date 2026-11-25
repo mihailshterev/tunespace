@@ -42,6 +42,11 @@ public interface IForumRepository
     Task<List<ForumThread>?> GetThreadsByAuthorId(Guid authorId);
 
     /// <summary>
+    /// Retrieves threads written by any of the given authors, most recently active first.
+    /// </summary>
+    Task<List<ForumThread>> GetThreadsByAuthorIds(IReadOnlyCollection<Guid> authorIds);
+
+    /// <summary>
     /// Retrieves a thread with all its associated posts
     /// </summary>
     /// <param name="threadId">The ID of the thread</param>

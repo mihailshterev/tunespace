@@ -16,4 +16,5 @@ public record MemberResponse(
     string Id,
     string Name,
     string Email,
-    byte[]? ProfilePicture);
+    byte[]? ProfilePicture,
+    string Role);

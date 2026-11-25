@@ -64,4 +64,12 @@ internal class RefreshTokenRepository(TuneSpaceDbContext context) : IRefreshToke
         return await _context.RefreshTokens
             .AnyAsync(rt => rt.TokenHash == token && rt.RevokedAt.HasValue);
     }
+
+    async Task<int> IRefreshTokenRepository.RevokeAllForUserAsync(Guid userId)
+    {
+        var now = DateTime.UtcNow;
+        return await _context.RefreshTokens
+            .Where(rt => rt.UserId == userId && rt.RevokedAt == null)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(rt => rt.RevokedAt, now));
+    }
 }

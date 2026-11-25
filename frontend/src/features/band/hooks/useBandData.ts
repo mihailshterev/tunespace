@@ -1,4 +1,13 @@
-import { addMemberToBand, getBand, updateBand } from "@/features/band/api/band.service";
+import {
+  addMemberToBand,
+  deleteBand,
+  getBand,
+  removeBandMember,
+  setBandMemberRole,
+  updateBand,
+} from "@/features/band/api/band.service";
+import type { BandRole } from "@/features/band/types/band";
+import { CURRENT_USER_QUERY_KEY } from "@/shared/auth/hooks/useAuthSync";
 import { fetchBandThreads } from "@/features/forums/api/forum.service";
 import { getSpotifyArtist } from "@/shared/spotify/api/spotify.service";
 import { isNullOrEmpty } from "@/shared/utils/helpers";
@@ -66,6 +75,37 @@ const useBandData = (userId: string) => {
     },
   });
 
+  // Membership changes can change roles (including the signed-in user's), so refresh both.
+  const refreshMembership = () => {
+    queryClient.invalidateQueries({ queryKey: ["band", userId] });
+    queryClient.invalidateQueries({ queryKey: ["bandForumThreads"] });
+    queryClient.invalidateQueries({ queryKey: CURRENT_USER_QUERY_KEY });
+  };
+
+  const { mutateAsync: removeMemberMutation } = useMutation({
+    mutationFn: ({ bandId, userId }: { bandId: string; userId: string }) =>
+      removeBandMember(bandId, userId),
+    onSuccess: refreshMembership,
+  });
+
+  const { mutateAsync: setMemberRoleMutation } = useMutation({
+    mutationFn: ({
+      bandId,
+      userId,
+      role,
+    }: {
+      bandId: string;
+      userId: string;
+      role: BandRole;
+    }) => setBandMemberRole(bandId, userId, role),
+    onSuccess: refreshMembership,
+  });
+
+  const { mutateAsync: deleteBandMutation } = useMutation({
+    mutationFn: (bandId: string) => deleteBand(bandId),
+    onSuccess: refreshMembership,
+  });
+
   const isBandLoading =
     isBandDataLoading || isSpotifyProfileLoading || isBandForumThreadsLoading;
   const isBandError =
@@ -75,7 +115,13 @@ const useBandData = (userId: string) => {
 
   return {
     bandData: { band, spotifyProfile, forumThreads },
-    mutations: { updateBandMutation, addMemberMutation },
+    mutations: {
+      updateBandMutation,
+      addMemberMutation,
+      removeMemberMutation,
+      setMemberRoleMutation,
+      deleteBandMutation,
+    },
     isBandLoading,
     isBandError,
     bandError,

@@ -74,6 +74,8 @@ internal partial class AuthService(
             throw new UnauthorizedException("Incorrect email or password");
         }
 
+        EnsureNotSuspended(user);
+
         if (_emailOptions.RequireConfirmation && !await _userManager.IsEmailConfirmedAsync(user))
         {
             throw new UnauthorizedException("Please confirm your email address before logging in. Check your inbox for the confirmation link.");
@@ -136,6 +138,8 @@ internal partial class AuthService(
                 await _userRepository.InsertExternalUserAsync(user);
             }
         }
+
+        EnsureNotSuspended(user);
 
         user.LastActiveDate = DateTime.UtcNow;
         await _userRepository.UpdateUserAsync(user);
@@ -206,6 +210,14 @@ internal partial class AuthService(
         return sanitized.Length > 32 ? sanitized[..32] : sanitized;
     }
 
+    private static void EnsureNotSuspended(User user)
+    {
+        if (user.IsSuspended)
+        {
+            throw new UnauthorizedException("This account has been suspended. Please contact support.");
+        }
+    }
+
     [GeneratedRegex(@"[^\w\d]")]
     private static partial Regex SanitizeRegex();
 
@@ -239,6 +251,11 @@ internal partial class AuthService(
         if (result.Succeeded)
         {
             await _emailService.SendWelcomeEmailAsync(user);
+
+            if (user.IsSuspended)
+            {
+                return null;
+            }
 
             var accessToken = _tokenService.GenerateAccessToken(user);
             var refreshToken = _tokenService.GenerateRefreshToken();

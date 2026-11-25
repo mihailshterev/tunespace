@@ -25,6 +25,7 @@ export const ROUTES = {
   MESSAGES: "/messages",
   BAND: "/band",
   BAND_REGISTER: "/band/register",
+  ADMIN_USERS: "/admin/users",
 } as const;
 
 export const ENDPOINTS = {
@@ -52,6 +53,7 @@ export const ENDPOINTS = {
   MUSIC_EVENTS: "MusicEvent",
   NOTIFICATION: "Notification",
   FORUM: "Forum",
+  ADMIN: "Admin",
 } as const;
 
 export const SPOTIFY_ENDPOINTS = {

@@ -1,6 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using TuneSpace.Core.Entities;
+using TuneSpace.Core.Enums;
 using TuneSpace.Core.Interfaces.IRepositories;
+using TuneSpace.Core.Models;
 using TuneSpace.Infrastructure.Data;
 
 namespace TuneSpace.Infrastructure.Repositories;
@@ -72,8 +74,36 @@ internal class BandRepository(TuneSpaceDbContext context) : IBandRepository
 
     async Task IBandRepository.DeleteBandAsync(Guid id)
     {
-        var band = await _context.Bands.FindAsync(id) ?? throw new KeyNotFoundException($"Band with ID {id} not found.");
+        var band = await _context.Bands
+            .Include(b => b.Members)
+            .FirstOrDefaultAsync(b => b.Id == id)
+            ?? throw new KeyNotFoundException($"Band with ID {id} not found.");
+
+        // Members and band-sent messages reference the band without a cascade rule, so they must be
+        // detached first or the database rejects the delete. Events, merch, chats and follows cascade.
+        band.Members.Clear();
+        await _context.BandMessages
+            .Where(m => m.BandId == id)
+            .ExecuteUpdateAsync(setters => setters.SetProperty(m => m.BandId, (Guid?)null));
+
         _context.Bands.Remove(band);
         await _context.SaveChangesAsync();
+    }
+
+    async Task<Dictionary<Guid, BandSummary>> IBandRepository.GetBandSummariesAsync(IReadOnlyCollection<Guid> bandIds)
+    {
+        if (bandIds.Count == 0)
+        {
+            return [];
+        }
+
+        return await _context.Bands
+            .Where(b => bandIds.Contains(b.Id))
+            .Select(b => new BandSummary(
+                b.Id,
+                b.Name,
+                b.Members.Count,
+                b.Members.Count(m => m.Role == Roles.BandAdmin || m.Role == Roles.Admin)))
+            .ToDictionaryAsync(s => s.Id);
     }
 }

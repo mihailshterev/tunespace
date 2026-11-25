@@ -55,6 +55,11 @@ public class AuthController(
                 return NotFound("User not found");
             }
 
+            if (user.IsSuspended)
+            {
+                return Unauthorized("Account is suspended");
+            }
+
             var profilePictureBase64 = user.ProfilePicture != null ?
                 Convert.ToBase64String(user.ProfilePicture) : null;
 
@@ -88,6 +93,13 @@ public class AuthController(
         }
 
         if (!Enum.TryParse<Roles>(request.Role, true, out var role))
+        {
+            return BadRequest("Invalid role specified");
+        }
+
+        // Self-registration only creates listeners. Band roles come from creating or joining a band,
+        // and Admin is granted by another admin (or the Admin:BootstrapEmails setting).
+        if (role != Roles.Listener)
         {
             return BadRequest("Invalid role specified");
         }
@@ -214,7 +226,7 @@ public class AuthController(
             CookieHelper.SetAuthTokens(Response, newAccessToken, newRefreshToken);
 
             var username = user.UserName;
-            var role = user.Role.ToString().ToUpper();
+            var role = user.Role.ToString();
             var id = user.Id;
 
             _logger.LogInformation("Token refreshed successfully");

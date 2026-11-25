@@ -1,4 +1,6 @@
+using System.IdentityModel.Tokens.Jwt;
 using System.Net.Mail;
+using System.Security.Claims;
 using System.Text;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -12,6 +14,7 @@ using Polly;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IClients;
+using TuneSpace.Core.Interfaces.IInfrastructure;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 using TuneSpace.Infrastructure.Clients;
@@ -38,6 +41,49 @@ public static class ServiceCollectionExtensions
     {
         services.AddMemoryCache();
         return services;
+    }
+
+    /// <summary>
+    /// Access tokens carry the role they were issued with and live for an hour. Re-check the user's
+    /// current role and suspension on each request so admin changes apply immediately: suspended or
+    /// deleted users are rejected and the role claim is replaced with the stored role.
+    /// </summary>
+    private static async Task ApplyCurrentAccessStateAsync(TokenValidatedContext context)
+    {
+        if (context.Principal?.Identity is not ClaimsIdentity identity)
+        {
+            context.Fail("Invalid token.");
+            return;
+        }
+
+        var userIdValue = identity.FindFirst(ClaimTypes.NameIdentifier)?.Value
+            ?? identity.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
+        if (!Guid.TryParse(userIdValue, out var userId))
+        {
+            context.Fail("Invalid token claims.");
+            return;
+        }
+
+        var accessStateProvider = context.HttpContext.RequestServices.GetRequiredService<IUserAccessStateProvider>();
+        var state = await accessStateProvider.GetAsync(userId);
+        if (state is null || state.IsSuspended)
+        {
+            context.Fail("Account is unavailable.");
+            return;
+        }
+
+        var currentRole = state.Role.ToString();
+        var roleClaims = identity.FindAll(identity.RoleClaimType).ToList();
+        if (roleClaims.Count == 1 && roleClaims[0].Value == currentRole)
+        {
+            return;
+        }
+
+        foreach (var claim in roleClaims)
+        {
+            identity.RemoveClaim(claim);
+        }
+        identity.AddClaim(new Claim(identity.RoleClaimType, currentRole));
     }
 
     public static IServiceCollection AddIdentityServices(this IServiceCollection services)
@@ -75,7 +121,8 @@ public static class ServiceCollectionExtensions
                     }
 
                     return Task.CompletedTask;
-                }
+                },
+                OnTokenValidated = ApplyCurrentAccessStateAsync
             };
         }).AddCookie(IdentityConstants.ApplicationScheme);
 
@@ -124,6 +171,8 @@ public static class ServiceCollectionExtensions
     public static IServiceCollection AddInfrastructureServices(this IServiceCollection services)
     {
         services.AddScoped<IUrlBuilderService, UrlBuilderService>();
+        services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IUserAccessStateProvider, UserAccessStateProvider>();
 
         return services;
     }
@@ -343,6 +392,7 @@ public static class ServiceCollectionExtensions
         services.Configure<SpotifyOptions>(configuration.GetSection("Spotify"));
         services.Configure<LastFmOptions>(configuration.GetSection("LastFm"));
         services.Configure<SecurityOptions>(configuration.GetSection("Security"));
+        services.Configure<AdminOptions>(configuration.GetSection("Admin"));
 
         return services;
     }

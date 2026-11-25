@@ -17,3 +17,6 @@ export const hasRole = (
   role: string | undefined,
   allowedRoles: readonly UserRole[],
 ): boolean => !!role && (allowedRoles as readonly string[]).includes(role);
+
+// Roles that may manage other users' accounts.
+export const ADMIN_ROLES: readonly UserRole[] = [UserRole.Admin];

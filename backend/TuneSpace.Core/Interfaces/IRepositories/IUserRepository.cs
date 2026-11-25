@@ -1,4 +1,6 @@
 using TuneSpace.Core.Entities;
+using TuneSpace.Core.Enums;
+using TuneSpace.Core.Models;
 
 namespace TuneSpace.Core.Interfaces.IRepositories;
 
@@ -79,4 +81,35 @@ public interface IUserRepository
     /// <param name="lastActiveDate">The new last active date.</param>
     /// <returns>A task representing the asynchronous operation.</returns>
     Task UpdateUserLastActiveDateAsync(string userId, DateTime lastActiveDate);
+
+    /// <summary>
+    /// Retrieves a page of users ordered by username.
+    /// </summary>
+    /// <param name="search">Optional case-insensitive prefix matched against username or email.</param>
+    /// <param name="role">Optional role filter.</param>
+    /// <param name="suspended">Optional suspension-state filter.</param>
+    /// <param name="skip">Number of users to skip.</param>
+    /// <param name="take">Maximum number of users to return.</param>
+    /// <returns>The requested page and the total number of users matching the filters.</returns>
+    Task<(List<UserListItem> Users, int TotalCount)> GetUsersPagedAsync(string? search, Roles? role, bool? suspended, int skip, int take);
+
+    /// <summary>
+    /// Counts users per role.
+    /// </summary>
+    Task<Dictionary<Roles, int>> GetUserCountsByRoleAsync();
+
+    /// <summary>
+    /// Counts users whose accounts are currently suspended.
+    /// </summary>
+    Task<int> GetSuspendedUserCountAsync();
+
+    /// <summary>
+    /// Sets the user's role and keeps their Identity role membership in sync with it.
+    /// </summary>
+    Task UpdateUserRoleAsync(User user, Roles role);
+
+    /// <summary>
+    /// Suspends (indefinite lockout) or restores the user's account.
+    /// </summary>
+    Task SetSuspendedAsync(User user, bool suspended);
 }

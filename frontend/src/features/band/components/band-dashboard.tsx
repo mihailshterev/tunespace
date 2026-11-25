@@ -12,10 +12,12 @@ import { Users, CalendarDays, Music, Guitar } from "lucide-react";
 import CreateDiscussionDialog from "@/features/forums/components/create-discussion-dialog";
 import AddEventDialog from "@/features/events/components/add-event-dialog";
 import useEvents from "@/features/events/hooks/useEvents";
-import UserSearchDialog from "@/features/profile/components/user-search-dialog";
 import type UserType from "@/features/profile/types/user";
 import { toast } from "sonner";
 import AddMerchandiseDialog from "./add-merchandise-dialog";
+import { BandMembers } from "./band-members";
+import { DeleteBandSection } from "./delete-band-section";
+import { getErrorMessage } from "@/shared/api/error-message";
 import useMerchandise from "@/features/band/hooks/useMerchandise";
 import BandFollowers from "./band-followers";
 import BandMessagingDashboard from "./band-messaging-dashboard";
@@ -180,11 +182,9 @@ const BandDashboard = () => {
       toast(`Added ${user.name} as a band member!`);
     } catch (error) {
       console.error("Error adding band member:", error);
-      const errorMessage =
-        error instanceof Error
-          ? error.message
-          : "Failed to add member. Please try again.";
-      toast(errorMessage);
+      toast.error(
+        getErrorMessage(error, "Failed to add member. Please try again."),
+      );
     }
   };
 
@@ -467,10 +467,12 @@ const BandDashboard = () => {
                       <Users className="h-5 w-5" />
                       <span>Band Forum</span>
                     </CardTitle>
-                    <CreateDiscussionDialog
-                      buttonText="New Discussion"
-                      buttonVariant="outline"
-                    />
+                    {canManageBand && (
+                      <CreateDiscussionDialog
+                        buttonText="New Discussion"
+                        buttonVariant="outline"
+                      />
+                    )}
                   </div>
                 </CardHeader>
                 <CardContent className="p-4">
@@ -579,7 +581,9 @@ const BandDashboard = () => {
                 <CardTitle className="flex items-center gap-2">
                   <CalendarDays className="h-5 w-5" />
                   <span>Upcoming Concerts</span>
-                  <AddEventDialog bandId={bandData.band?.id} />
+                  {canManageBand && (
+                    <AddEventDialog bandId={bandData.band?.id} />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
@@ -642,63 +646,31 @@ const BandDashboard = () => {
               </CardContent>
             </Card>
 
-            <Card className="mb-6 overflow-hidden border-muted/20">
-              <CardHeader className="bg-muted/10 pb-2">
-                <CardTitle className="flex items-center gap-2">
-                  <span>Band Members</span>
-                  {canManageBand && (
-                    <UserSearchDialog
-                      trigger={
-                        <button className="ml-auto text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
-                          Add Member
-                        </button>
-                      }
-                      title="Add Band Member"
-                      onSelectUser={handleAddMember}
-                      buttonText="Add to Band"
-                    />
-                  )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="p-4">
-                <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-                  {bandData.band?.members?.map((member, index) => (
-                    <Card key={index} className="flex flex-col overflow-hidden">
-                      <div className="bg-muted/20 aspect-square flex items-center justify-center">
-                        <Avatar className="w-[220px] h-[220px] rounded-lg shadow-md border border-muted">
-                          <AvatarImage
-                            src={`data:image/jpeg;base64,${member.profilePicture}`}
-                            className="object-cover"
-                          />
-                          <AvatarFallback className="text-3xl font-semibold bg-secondary/30">
-                            {member.name?.charAt(0)}
-                          </AvatarFallback>
-                        </Avatar>
-                      </div>
-                      <div className="p-3">
-                        <h4 className="font-semibold">{member.name}</h4>
-                        <p className="text-sm text-muted-foreground">
-                          Role/Instrument
-                        </p>
-                      </div>
-                    </Card>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
+            <BandMembers
+              bandId={bandData.band?.id || ""}
+              bandName={bandData.band?.name || ""}
+              members={bandData.band?.members ?? []}
+              currentUserId={auth?.id}
+              canManageBand={canManageBand}
+              onAddMember={handleAddMember}
+              removeMember={mutations.removeMemberMutation}
+              setMemberRole={mutations.setMemberRoleMutation}
+            />
             <Card className="overflow-hidden border-muted/20">
               <CardHeader className="bg-muted/10 pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <span>Merchandise</span>
-                  <AddMerchandiseDialog
-                    bandId={bandData?.band?.id || ""}
-                    onMerchandiseAdded={refetchMerchandise}
-                    trigger={
-                      <button className="ml-auto text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
-                        Add Item
-                      </button>
-                    }
-                  />
+                  {canManageBand && (
+                    <AddMerchandiseDialog
+                      bandId={bandData?.band?.id || ""}
+                      onMerchandiseAdded={refetchMerchandise}
+                      trigger={
+                        <button className="ml-auto text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
+                          Add Item
+                        </button>
+                      }
+                    />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">
@@ -745,6 +717,13 @@ const BandDashboard = () => {
           </div>
         </CardContent>
       </Card>
+      {canManageBand && bandData.band?.id && (
+        <DeleteBandSection
+          bandId={bandData.band.id}
+          bandName={bandData.band.name}
+          deleteBand={mutations.deleteBandMutation}
+        />
+      )}
     </div>
   );
 };

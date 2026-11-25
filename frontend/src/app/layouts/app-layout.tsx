@@ -6,9 +6,11 @@ import LogoutOverlay from "@/app/components/logout-overlay";
 import Loading from "@/shared/ui/loading";
 import { SidebarProvider } from "@/shared/ui/sidebar";
 import useAuth from "@/shared/auth/hooks/useAuth";
+import useAuthSync from "@/shared/auth/hooks/useAuthSync";
 
 export function AppLayout() {
   const { isLoggingOut } = useAuth();
+  useAuthSync();
 
   return (
     <>

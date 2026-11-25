@@ -5,6 +5,8 @@ using TuneSpace.Core.DTOs.Responses.Band;
 using TuneSpace.Core.DTOs.Responses.User;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
+using TuneSpace.Core.Exceptions;
+using TuneSpace.Core.Interfaces.IInfrastructure;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
 
@@ -13,10 +15,14 @@ namespace TuneSpace.Application.Services;
 internal class BandService(
     IBandRepository bandRepository,
     IUserRepository userRepository,
+    IUnitOfWork unitOfWork,
+    IUserAccessStateProvider accessStateProvider,
     ILogger<BandService> logger) : IBandService
 {
     private readonly IBandRepository _bandRepository = bandRepository;
     private readonly IUserRepository _userRepository = userRepository;
+    private readonly IUnitOfWork _unitOfWork = unitOfWork;
+    private readonly IUserAccessStateProvider _accessStateProvider = accessStateProvider;
     private readonly ILogger<BandService> _logger = logger;
 
     async Task<BandResponse?> IBandService.GetBandByIdAsync(Guid id)
@@ -31,23 +37,7 @@ internal class BandService(
                 return null;
             }
 
-            return new BandResponse(
-                band.Id.ToString(),
-                band.Name,
-                band.Description ?? string.Empty,
-                band.Genre,
-                band.Country ?? string.Empty,
-                band.City ?? string.Empty,
-                band.CoverImage ?? [],
-                band.SpotifyId,
-                band.YouTubeEmbedId,
-                band.Members?.Select(m => new MemberResponse(
-                    m.Id.ToString(),
-                    m.UserName ?? string.Empty,
-                    "",
-                    m.ProfilePicture
-                )).ToList()
-            );
+            return ToResponse(band);
         }
         catch (Exception ex)
         {
@@ -68,23 +58,7 @@ internal class BandService(
                 return null;
             }
 
-            return new BandResponse(
-                band.Id.ToString(),
-                band.Name,
-                band.Description ?? string.Empty,
-                band.Genre,
-                band.Country ?? string.Empty,
-                band.City ?? string.Empty,
-                band.CoverImage ?? [],
-                band.SpotifyId,
-                band.YouTubeEmbedId,
-                band.Members?.Select(m => new MemberResponse(
-                    m.Id.ToString(),
-                    m.UserName ?? string.Empty,
-                    "",
-                    m.ProfilePicture
-                )).ToList()
-            );
+            return ToResponse(band);
         }
         catch (Exception ex)
         {
@@ -105,23 +79,7 @@ internal class BandService(
                 return null;
             }
 
-            return new BandResponse(
-                band.Id.ToString(),
-                band.Name,
-                band.Description ?? string.Empty,
-                band.Genre,
-                band.Country ?? string.Empty,
-                band.City ?? string.Empty,
-                band.CoverImage ?? [],
-                band.SpotifyId,
-                band.YouTubeEmbedId,
-                band.Members?.Select(m => new MemberResponse(
-                    m.Id.ToString(),
-                    m.UserName ?? string.Empty,
-                    "",
-                    m.ProfilePicture
-                )).ToList()
-            );
+            return ToResponse(band);
         }
         catch (Exception ex)
         {
@@ -177,61 +135,44 @@ internal class BandService(
 
     async Task<BandResponse?> IBandService.CreateBandAsync(CreateBandRequest request)
     {
-        try
+        _logger.LogInformation("Creating new band with name: {BandName}", Helpers.SanitizeForLogging(request.Name));
+
+        var user = await _userRepository.GetUserByIdAsync(request.UserId);
+        if (user == null)
         {
-            _logger.LogInformation("Creating new band with name: {BandName}", Helpers.SanitizeForLogging(request.Name));
+            _logger.LogWarning("User not found when creating band");
+            return null;
+        }
 
-            var user = await _userRepository.GetUserByIdAsync(request.UserId);
-            if (user == null)
-            {
-                _logger.LogWarning("User not found when creating band");
-                return null;
-            }
+        var existingBand = await _bandRepository.GetBandByUserIdAsync(request.UserId);
+        if (existingBand is not null)
+        {
+            throw new ConflictException($"You already belong to {existingBand.Name}. Leave it before creating a new band.");
+        }
 
-            var city = request.Location.Split(',')[1].Trim();
-            var country = request.Location.Split(',')[0].Trim();
+        var city = request.Location.Split(',')[1].Trim();
+        var country = request.Location.Split(',')[0].Trim();
 
-            user.Role = Roles.BandAdmin;
-            await _userRepository.UpdateUserAsync(user);
-            _logger.LogInformation("User {UserName} updated to BandAdmin role", user.UserName);
+        var band = new Band
+        {
+            Name = request.Name,
+            Genre = request.Genre,
+            Description = request.Description,
+            Country = country,
+            City = city,
+            CoverImage = request.Picture?.Content,
+            Members = [user],
+        };
 
-            var band = new Band
-            {
-                Name = request.Name,
-                Genre = request.Genre,
-                Description = request.Description,
-                Country = country,
-                City = city,
-                CoverImage = request.Picture?.Content,
-                Members = [user],
-            };
-
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
             await _bandRepository.InsertBandAsync(band);
-            _logger.LogInformation("Band {BandName} created successfully with ID {BandId}", Helpers.SanitizeForLogging(band.Name), band.Id);
+            await SetRoleAsync(user, BandMembershipRules.RoleOnCreatingBand(user));
+        });
 
-            return new BandResponse(
-                band.Id.ToString(),
-                band.Name,
-                band.Description ?? string.Empty,
-                band.Genre,
-                band.Country ?? string.Empty,
-                band.City ?? string.Empty,
-                band.CoverImage ?? [],
-                band.SpotifyId,
-                band.YouTubeEmbedId,
-                band.Members?.Select(m => new MemberResponse(
-                    m.Id.ToString(),
-                    m.UserName ?? string.Empty,
-                    "",
-                    m.ProfilePicture
-                )).ToList()
-            );
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error creating band with name {BandName}", Helpers.SanitizeForLogging(request.Name));
-            throw;
-        }
+        _logger.LogInformation("Band {BandName} created successfully with ID {BandId}", Helpers.SanitizeForLogging(band.Name), band.Id);
+
+        return ToResponse(band);
     }
 
     async Task IBandService.UpdateBandAsync(UpdateBandRequest request)
@@ -289,52 +230,93 @@ internal class BandService(
 
     async Task IBandService.AddMemberToBandAsync(Guid userId, Guid bandId)
     {
-        try
+        var band = await GetBandOrThrowAsync(bandId);
+        var user = await _userRepository.GetUserByIdAsync(userId.ToString())
+            ?? throw new NotFoundException("User not found");
+
+        if (band.Members.Any(m => m.Id == user.Id))
         {
-            _logger.LogInformation("Adding user to band");
-            var band = await _bandRepository.GetBandByIdAsync(bandId);
-            if (band == null)
-            {
-                _logger.LogWarning("Band not found when adding member");
-                return;
-            }
+            throw new ConflictException($"{user.UserName} is already a member of {band.Name}.");
+        }
 
-            var user = await _userRepository.GetUserByIdAsync(userId.ToString());
-            if (user == null)
-            {
-                _logger.LogWarning("User not found when adding to band");
-                return;
-            }
+        if (user.IsSuspended)
+        {
+            throw new ConflictException($"{user.UserName}'s account is suspended, so they can't join a band.");
+        }
 
-            if (band.Members.Any(m => m.Id == user.Id))
-            {
-                _logger.LogWarning("User is already a member of the band");
-                return;
-            }
+        var currentBand = await _bandRepository.GetBandByUserIdAsync(user.Id.ToString());
+        if (currentBand is not null)
+        {
+            throw new ConflictException($"{user.UserName} already belongs to {currentBand.Name}.");
+        }
 
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
             band.Members.Add(user);
             await _bandRepository.UpdateBandAsync(band);
+            await SetRoleAsync(user, BandMembershipRules.RoleOnJoining(user));
+        });
 
-            // Only promote listeners; never demote an admin or band admin by adding them to a band.
-            if (user.Role == Roles.Listener)
-            {
-                user.Role = Roles.BandMember;
-                await _userRepository.UpdateUserAsync(user);
-            }
+        _logger.LogInformation("User {UserId} added to band {BandId}", user.Id, band.Id);
+    }
 
-            _logger.LogInformation("User added to band successfully");
-        }
-        catch (Exception ex)
+    async Task IBandService.RemoveMemberAsync(Guid bandId, Guid userId)
+    {
+        var band = await GetBandOrThrowAsync(bandId);
+        var member = band.Members.FirstOrDefault(m => m.Id == userId)
+            ?? throw new NotFoundException("That user isn't a member of this band.");
+
+        var reason = BandMembershipRules.ValidateLeave(band, member);
+        if (reason is not null)
         {
-            _logger.LogError(ex, "Error adding user to band");
-            throw;
+            throw new ConflictException(reason);
         }
+
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            band.Members.Remove(member);
+            await _bandRepository.UpdateBandAsync(band);
+            await SetRoleAsync(member, BandMembershipRules.RoleOnLeaving(member));
+        });
+
+        _logger.LogInformation("User {UserId} removed from band {BandId}", userId, bandId);
+    }
+
+    async Task IBandService.SetMemberRoleAsync(Guid bandId, Guid userId, Roles role)
+    {
+        if (!BandMembershipRules.IsBandRole(role))
+        {
+            throw new ConflictException("A band member can only be made a Band Admin or a Band Member.");
+        }
+
+        var band = await GetBandOrThrowAsync(bandId);
+        var member = band.Members.FirstOrDefault(m => m.Id == userId)
+            ?? throw new NotFoundException("That user isn't a member of this band.");
+
+        if (member.Role == Roles.Admin)
+        {
+            throw new ConflictException($"{member.UserName} is a site admin; their role can only be changed from User Management.");
+        }
+
+        if (member.Role == role)
+        {
+            return;
+        }
+
+        var reason = BandMembershipRules.ValidateRoleChange(member, band, role);
+        if (reason is not null)
+        {
+            throw new ConflictException(reason);
+        }
+
+        await SetRoleAsync(member, role);
+        _logger.LogInformation("User {UserId} in band {BandId} is now {Role}", userId, bandId, role);
     }
 
     async Task<bool> IBandService.CanManageBandAsync(Guid userId, Guid bandId)
     {
         var user = await _userRepository.GetUserByIdAsync(userId.ToString());
-        if (user == null)
+        if (user == null || user.IsSuspended)
         {
             return false;
         }
@@ -355,20 +337,56 @@ internal class BandService(
 
     async Task IBandService.DeleteBandAsync(Guid id)
     {
-        try
+        var band = await GetBandOrThrowAsync(id);
+        var members = band.Members.ToList();
+
+        await _unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            _logger.LogInformation("Deleting band with ID {Id}", id);
+            foreach (var member in members)
+            {
+                await SetRoleAsync(member, BandMembershipRules.RoleOnLeaving(member));
+            }
+
             await _bandRepository.DeleteBandAsync(id);
-            _logger.LogInformation("Band with ID {Id} deleted successfully", id);
-        }
-        catch (KeyNotFoundException)
-        {
-            _logger.LogWarning("Band with ID {Id} not found for deletion", id);
-        }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Error deleting band with ID {Id}", id);
-            throw;
-        }
+        });
+
+        _logger.LogInformation("Band with ID {Id} deleted; {Count} members returned to their non-band roles", id, members.Count);
     }
+
+    private async Task<Band> GetBandOrThrowAsync(Guid bandId)
+    {
+        return await _bandRepository.GetBandByIdAsync(bandId)
+            ?? throw new NotFoundException("Band not found");
+    }
+
+    private async Task SetRoleAsync(User user, Roles role)
+    {
+        if (user.Role != role)
+        {
+            await _userRepository.UpdateUserRoleAsync(user, role);
+        }
+
+        _accessStateProvider.Invalidate(user.Id);
+    }
+
+    private static BandResponse ToResponse(Band band) => new(
+        band.Id.ToString(),
+        band.Name,
+        band.Description ?? string.Empty,
+        band.Genre,
+        band.Country ?? string.Empty,
+        band.City ?? string.Empty,
+        band.CoverImage ?? [],
+        band.SpotifyId,
+        band.YouTubeEmbedId,
+        band.Members?
+            .OrderByDescending(m => BandMembershipRules.IsManagerRole(m.Role))
+            .ThenBy(m => m.UserName)
+            .Select(m => new MemberResponse(
+                m.Id.ToString(),
+                m.UserName ?? string.Empty,
+                string.Empty,
+                m.ProfilePicture,
+                m.Role.ToString()))
+            .ToList());
 }

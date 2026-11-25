@@ -11,10 +11,31 @@ namespace TuneSpace.Api.Controllers;
 [Authorize]
 public class MusicEventController(
     IMusicEventService musicEventService,
+    IBandService bandService,
     ILogger<MusicEventController> logger) : ControllerBase
 {
     private readonly IMusicEventService _musicEventService = musicEventService;
+    private readonly IBandService _bandService = bandService;
     private readonly ILogger<MusicEventController> _logger = logger;
+
+    /// <summary>
+    /// Resolves whether the caller may change an existing event: null when allowed, otherwise the result to return.
+    /// </summary>
+    private async Task<IActionResult?> AuthorizeEventChangeAsync(Guid eventId)
+    {
+        var existing = await _musicEventService.GetMusicEventByIdAsync(eventId);
+        if (existing is null)
+        {
+            return NotFound("Event not found");
+        }
+
+        if (!await _bandService.CanManageBandAsync(User.GetUserId(), existing.BandId))
+        {
+            return Forbid();
+        }
+
+        return null;
+    }
 
     [HttpGet]
     public async Task<IActionResult> GetAllEvents()
@@ -117,6 +138,11 @@ public class MusicEventController(
     {
         try
         {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), request.BandId))
+            {
+                return Forbid();
+            }
+
             var musicEvent = await _musicEventService.CreateMusicEventAsync(request);
 
             if (musicEvent is null)
@@ -138,6 +164,11 @@ public class MusicEventController(
     {
         try
         {
+            if (await AuthorizeEventChangeAsync(request.Id) is { } denied)
+            {
+                return denied;
+            }
+
             await _musicEventService.UpdateMusicEventAsync(request);
             return Ok("Event updated successfully");
         }
@@ -163,6 +194,11 @@ public class MusicEventController(
 
         try
         {
+            if (await AuthorizeEventChangeAsync(parsedEventId) is { } denied)
+            {
+                return denied;
+            }
+
             await _musicEventService.DeleteMusicEventAsync(parsedEventId);
             return Ok("Event deleted successfully");
         }
