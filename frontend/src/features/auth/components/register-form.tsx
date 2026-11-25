@@ -2,8 +2,15 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@/shared/forms/zod-resolver";
 import { useEffect, useState } from "react";
 import FormInput from "@/shared/ui/form-input";
-import { type RegisterInputs, registerSchema } from "@/features/auth/schemas/register.schema";
-import { BASE_URL, SPOTIFY_ENDPOINTS, UserRole } from "@/shared/utils/constants";
+import {
+  type RegisterInputs,
+  registerSchema,
+} from "@/features/auth/schemas/register.schema";
+import {
+  BASE_URL,
+  SPOTIFY_ENDPOINTS,
+  UserRole,
+} from "@/shared/utils/constants";
 import { FaSpotify } from "react-icons/fa";
 import { Button } from "@/shared/ui/button";
 import {
@@ -17,7 +24,7 @@ const Register = () => {
   const navigate = useNavigate();
 
   const handleSpotifyLogin = () => {
-    navigate(`${BASE_URL}/${SPOTIFY_ENDPOINTS.LOGIN}`);
+    window.location.assign(`${BASE_URL}/${SPOTIFY_ENDPOINTS.LOGIN}`);
   };
 
   const {
@@ -46,7 +53,7 @@ const Register = () => {
     try {
       await registerUser(requestData);
       navigate(
-        `/auth/email-confirmation-sent?email=${encodeURIComponent(data.email)}`
+        `/auth/email-confirmation-sent?email=${encodeURIComponent(data.email)}`,
       );
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } catch (error: any) {

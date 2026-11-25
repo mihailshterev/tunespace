@@ -2,7 +2,10 @@ import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@/shared/forms/zod-resolver";
 import FormInput from "@/shared/ui/form-input";
-import { type LoginInputs, loginSchema } from "@/features/auth/schemas/login.schema";
+import {
+  type LoginInputs,
+  loginSchema,
+} from "@/features/auth/schemas/login.schema";
 import { BASE_URL, SPOTIFY_ENDPOINTS } from "@/shared/utils/constants";
 import { Button } from "@/shared/ui/button";
 import { FaSpotify } from "react-icons/fa";
@@ -18,7 +21,7 @@ const Login = () => {
   const navigate = useNavigate();
 
   const handleSpotifyLogin = () => {
-    navigate(`${BASE_URL}/${SPOTIFY_ENDPOINTS.LOGIN}`);
+    window.location.assign(`${BASE_URL}/${SPOTIFY_ENDPOINTS.LOGIN}`);
   };
 
   const {
@@ -71,7 +74,7 @@ const Login = () => {
             errorMessage.includes("confirm your email")
           ) {
             setError(
-              "Please confirm your email address before logging in. Check your inbox for the confirmation link."
+              "Please confirm your email address before logging in. Check your inbox for the confirmation link.",
             );
           } else {
             setError("Incorrect email or password");

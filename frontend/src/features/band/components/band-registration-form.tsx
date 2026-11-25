@@ -26,13 +26,14 @@ import { Card, CardContent } from "@/shared/ui/card";
 import { Upload, Music, MapPin, FileText } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "react-router";
+import { ROUTES, UserRole } from "@/shared/utils/constants";
 
 const BandRegistrationForm = ({ locationData }: { locationData: any }) => {
   const [imagePreview, setImagePreview] = useState("");
   const [error, setError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const { auth } = useAuth();
+  const { auth, updateAuth } = useAuth();
 
   const navigate = useNavigate();
   const queryClient = useQueryClient();
@@ -75,12 +76,15 @@ const BandRegistrationForm = ({ locationData }: { locationData: any }) => {
     try {
       await registerBand(combinedRequest);
 
+      // The backend promotes the creator to BandAdmin; mirror it locally so the dashboard's role guard lets them in.
+      updateAuth({ role: UserRole.BandAdmin });
+
       queryClient.invalidateQueries({
         queryKey: ["band", auth.id],
       });
 
       toast.success("Band profile created successfully! Welcome to TuneSpace!");
-      navigate("/band/dashboard");
+      navigate(ROUTES.BAND_DASHBOARD);
     } catch (error: any) {
       handleRequestError(error);
     } finally {
@@ -95,7 +99,7 @@ const BandRegistrationForm = ({ locationData }: { locationData: any }) => {
       switch (error.response.status) {
         case 409:
           setError(
-            "Band name is already taken. Please choose a different name."
+            "Band name is already taken. Please choose a different name.",
           );
           break;
         case 400:

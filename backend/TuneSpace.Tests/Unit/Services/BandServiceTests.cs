@@ -280,4 +280,94 @@ public class BandServiceTests
         result.Should().BeEmpty();
         _mockBandRepository.Verify(x => x.GetBandByIdAsync(bandId), Times.Once);
     }
+
+    private (User user, Band band) SetupUserAndBand(Roles role, bool isMember)
+    {
+        var user = new User { Id = Guid.NewGuid(), UserName = "user", Role = role };
+        var band = new Band
+        {
+            Id = Guid.NewGuid(),
+            Name = "Test Band",
+            Genre = "Rock",
+            Members = isMember ? new List<User> { user } : new List<User>()
+        };
+
+        _mockUserRepository.Setup(x => x.GetUserByIdAsync(user.Id.ToString())).ReturnsAsync(user);
+        _mockBandRepository.Setup(x => x.GetBandByIdAsync(band.Id)).ReturnsAsync(band);
+
+        return (user, band);
+    }
+
+    [Theory]
+    [InlineData(Roles.Admin, false, true)]
+    [InlineData(Roles.Admin, true, true)]
+    [InlineData(Roles.BandAdmin, true, true)]
+    [InlineData(Roles.BandAdmin, false, false)]
+    [InlineData(Roles.BandMember, true, false)]
+    [InlineData(Roles.Listener, false, false)]
+    public async Task CanManageBandAsync_ShouldDependOnRoleAndMembership(Roles role, bool isMember, bool expected)
+    {
+        var (user, band) = SetupUserAndBand(role, isMember);
+
+        var result = await _bandService.CanManageBandAsync(user.Id, band.Id);
+
+        result.Should().Be(expected);
+    }
+
+    [Fact]
+    public async Task CanManageBandAsync_WithUnknownUser_ShouldReturnFalse()
+    {
+        _mockUserRepository.Setup(x => x.GetUserByIdAsync(It.IsAny<string>())).ReturnsAsync((User?)null);
+
+        var result = await _bandService.CanManageBandAsync(Guid.NewGuid(), Guid.NewGuid());
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task CanManageBandAsync_WithUnknownBand_ShouldReturnFalse()
+    {
+        var (user, _) = SetupUserAndBand(Roles.BandAdmin, isMember: true);
+
+        var result = await _bandService.CanManageBandAsync(user.Id, Guid.NewGuid());
+
+        result.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithListener_ShouldAddAndPromoteToBandMember()
+    {
+        var (user, band) = SetupUserAndBand(Roles.Listener, isMember: false);
+
+        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
+
+        band.Members.Should().Contain(user);
+        user.Role.Should().Be(Roles.BandMember);
+        _mockUserRepository.Verify(x => x.UpdateUserAsync(user), Times.Once);
+    }
+
+    [Theory]
+    [InlineData(Roles.Admin)]
+    [InlineData(Roles.BandAdmin)]
+    public async Task AddMemberToBandAsync_WithElevatedRole_ShouldNotDemoteUser(Roles role)
+    {
+        var (user, band) = SetupUserAndBand(role, isMember: false);
+
+        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
+
+        band.Members.Should().Contain(user);
+        user.Role.Should().Be(role);
+        _mockUserRepository.Verify(x => x.UpdateUserAsync(It.IsAny<User>()), Times.Never);
+    }
+
+    [Fact]
+    public async Task AddMemberToBandAsync_WithExistingMember_ShouldNotAddAgain()
+    {
+        var (user, band) = SetupUserAndBand(Roles.BandMember, isMember: true);
+
+        await _bandService.AddMemberToBandAsync(user.Id, band.Id);
+
+        band.Members.Should().HaveCount(1);
+        _mockBandRepository.Verify(x => x.UpdateBandAsync(It.IsAny<Band>()), Times.Never);
+    }
 }

@@ -1,17 +1,20 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk.Web">
-    <ItemGroup>
-        <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
-        <PackageReference Include="Microsoft.EntityFrameworkCore.Design" >
-          <PrivateAssets>all</PrivateAssets>
-          <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
-        </PackageReference>
-        <PackageReference Include="Serilog.AspNetCore" />
-        <PackageReference Include="Swashbuckle.AspNetCore" />
-    </ItemGroup>
+  <PropertyGroup>
+    <UserSecretsId>b609bd72-d770-470e-96c4-a3413d800b9f</UserSecretsId>
+  </PropertyGroup>
+  <ItemGroup>
+    <PackageReference Include="Microsoft.AspNetCore.OpenApi" />
+    <PackageReference Include="Microsoft.EntityFrameworkCore.Design">
+      <PrivateAssets>all</PrivateAssets>
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+    </PackageReference>
+    <PackageReference Include="Serilog.AspNetCore" />
+    <PackageReference Include="Swashbuckle.AspNetCore" />
+  </ItemGroup>
 
-    <ItemGroup>
-      <ProjectReference Include="..\TuneSpace.Application\TuneSpace.Application.csproj" />
-      <ProjectReference Include="..\TuneSpace.Core\TuneSpace.Core.csproj" />
-      <ProjectReference Include="..\TuneSpace.Infrastructure\TuneSpace.Infrastructure.csproj" />
-    </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TuneSpace.Application\TuneSpace.Application.csproj" />
+    <ProjectReference Include="..\TuneSpace.Core\TuneSpace.Core.csproj" />
+    <ProjectReference Include="..\TuneSpace.Infrastructure\TuneSpace.Infrastructure.csproj" />
+  </ItemGroup>
 </Project>

@@ -13,7 +13,7 @@ import {
 } from "lucide-react";
 import { FaSpotify } from "react-icons/fa";
 import { BASE_URL, SPOTIFY_ENDPOINTS } from "@/shared/utils/constants";
-import { Link, useNavigate } from "react-router";
+import { Link } from "react-router";
 
 interface SpotifyFallbackProps {
   variant: "artists" | "tracks" | "recent" | "stats" | "full-dashboard";
@@ -36,13 +36,11 @@ const SpotifyFallback = ({
   connectButtonDisabled = false,
   onConnectSpotify,
 }: SpotifyFallbackProps) => {
-  const navigate = useNavigate();
-
   const handleSpotifyConnect = () => {
     if (onConnectSpotify) {
       onConnectSpotify();
     } else {
-      navigate(`${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`);
+      window.location.assign(`${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`);
     }
   };
 
@@ -198,8 +196,8 @@ const SpotifyFallback = ({
               variant === "artists"
                 ? "grid-cols-5"
                 : variant === "tracks"
-                ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
-                : "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
+                  ? "grid-cols-1 sm:grid-cols-2 lg:grid-cols-5"
+                  : "grid-cols-2 sm:grid-cols-3 md:grid-cols-6"
             }`}
           >
             {content.mockData.map((_item, index) => (

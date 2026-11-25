@@ -67,6 +67,16 @@ public interface IBandService
     Task AddMemberToBandAsync(Guid userId, Guid bandId);
 
     /// <summary>
+    /// Determines whether a user may manage a band: edit its profile, change its members or delete it.
+    /// Site admins may manage any band; band admins only bands they belong to.
+    /// The role is read from the database, so it stays correct even when the caller's access token is stale.
+    /// </summary>
+    /// <param name="userId">The unique identifier of the user attempting the action.</param>
+    /// <param name="bandId">The unique identifier of the band being managed.</param>
+    /// <returns>True if the user may manage the band; otherwise, false.</returns>
+    Task<bool> CanManageBandAsync(Guid userId, Guid bandId);
+
+    /// <summary>
     /// Deletes a band from the system.
     /// </summary>
     /// <param name="id">The unique identifier of the band to delete.</param>
