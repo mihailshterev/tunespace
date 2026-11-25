@@ -5,9 +5,9 @@
 ### _Discover the undiscovered. Connect with the underground._
 
 <img src="https://img.shields.io/badge/.NET-9.0-512BD4?style=for-the-badge&logo=dotnet&logoColor=white" alt=".NET 9" />
-<img src="https://img.shields.io/badge/Next.js-15-000000?style=for-the-badge&logo=nextdotjs&logoColor=white" alt="Next.js 15" />
+<img src="https://img.shields.io/badge/Vite-8-646CFF?style=for-the-badge&logo=vite&logoColor=white" alt="Vite 8" />
 <img src="https://img.shields.io/badge/React-19-61DAFB?style=for-the-badge&logo=react&logoColor=black" alt="React 19" />
-<img src="https://img.shields.io/badge/TypeScript-5.0-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
+<img src="https://img.shields.io/badge/TypeScript-5.9-3178C6?style=for-the-badge&logo=typescript&logoColor=white" alt="TypeScript" />
 <img src="https://img.shields.io/badge/PostgreSQL-16-336791?style=for-the-badge&logo=postgresql&logoColor=white" alt="PostgreSQL" />
 
 ---
@@ -98,9 +98,11 @@ A comprehensive music discovery platform designed to connect **independent under
 - **Entity Framework Core**: Database ORM with PostgreSQL support
 - **SignalR**: Real-time communication for chat and notifications
 
-### Frontend (Next.js 15)
+### Frontend (Vite + React 19)
 
-- **React 19**: Latest React features with concurrent rendering
+- **React 19**: Latest React features, optimised with the React Compiler
+- **Vite**: Fast dev server and production bundler
+- **React Router**: Client-side routing
 - **TypeScript**: Full type safety throughout the application
 - **Tailwind CSS**: Utility-first styling with custom design system
 - **shadcn/ui**: Modern, accessible component library
@@ -129,12 +131,9 @@ TuneSpace/
 │   └── TuneSpace.Tests/        # Unit and integration tests
 └── frontend/
     ├── src/
-    │   ├── app/                # Next.js app router pages
-    │   ├── components/         # React components
-    │   ├── hooks/              # Custom React hooks
-    │   ├── interfaces/         # TypeScript type definitions
-    │   ├── services/           # API service layer
-    │   └── utils/              # Utility functions
+    │   ├── app/                # App shell: routes, layouts, guards, providers, global styles
+    │   ├── features/           # One folder per feature (api, components, hooks, types, views)
+    │   └── shared/             # Cross-feature code: API client, auth, realtime, Spotify, UI kit, utils
     └── public/                 # Static assets
 ```
 
@@ -143,7 +142,7 @@ TuneSpace/
 ### Prerequisites
 
 - **Backend**: .NET 9 SDK, PostgreSQL
-- **Frontend**: Node.js 20+, npm/yarn
+- **Frontend**: Node.js 24+, pnpm
 - **External APIs**: Spotify Developer Account
 
 ### Backend Setup
@@ -181,9 +180,9 @@ TuneSpace/
    ```bash
    pnpm install
    ```
-3. Start the development server:
+3. Start the development server (http://localhost:5173):
    ```bash
-   pnpm run dev
+   pnpm dev
    ```
 
 ## 🎵 Core Discovery Algorithm

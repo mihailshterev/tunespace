@@ -1,4 +1,4 @@
-name: "Next.js Frontend CI/CD"
+name: "Frontend CI/CD"
 
 on:
   push:
@@ -14,7 +14,7 @@ on:
 
 env:
   NODE_VERSION: "24"
-  PNPM_VERSION: "11.0.6"
+  PNPM_VERSION: "12.9.1"
 
 jobs:
   lint-and-test:
@@ -47,7 +47,7 @@ jobs:
         run: pnpm lint
 
       - name: Check TypeScript
-        run: pnpm exec tsc --noEmit
+        run: pnpm exec tsc -b
 
       - name: Build application
         run: pnpm build
@@ -89,7 +89,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
-          path: ./frontend/.next/
+          path: ./frontend/dist/
           retention-days: 7
 
   security-scan:

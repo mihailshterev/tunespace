@@ -1,0 +1,9 @@
+export { ConfirmEmailChangeView } from "./views/confirm-email-change-view";
+export { ConfirmEmailView } from "./views/confirm-email-view";
+export { EmailConfirmationSentView } from "./views/email-confirmation-sent-view";
+export { ForgotPasswordView } from "./views/forgot-password-view";
+export { LoginView } from "./views/login-view";
+export { ResetPasswordView } from "./views/reset-password-view";
+export { SignupView } from "./views/signup-view";
+export { SpotifyCallbackView } from "./views/spotify-callback-view";
+export { SpotifyConnectCallbackView } from "./views/spotify-connect-callback-view";

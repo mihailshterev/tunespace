@@ -36,7 +36,7 @@ TuneSpace is a full-stack music discovery and community platform built specifica
 The system is composed of two applications:
 
 - A **.NET 9 backend** that follows Clean Architecture and is split into four projects (API, Application, Core, Infrastructure) plus a dedicated test project. It exposes a REST API and a SignalR hub, persists data in PostgreSQL, and integrates with several external music services.
-- A **Next.js 15 / React 19 frontend** written in TypeScript, using the App Router, Tailwind CSS with shadcn/ui components, TanStack Query for data fetching, and Zustand for client-side state.
+- A **Vite / React 19 single-page frontend** written in TypeScript, using React Router, Tailwind CSS with shadcn/ui components, TanStack Query for data fetching, and Zustand for client-side state.
 
 The two halves communicate over HTTP (REST) for request/response operations and over WebSockets (SignalR) for real-time features such as chat and notifications.
 
@@ -143,22 +143,23 @@ The application is built on a modern stack chosen for scalability, performance, 
 
 ### Frontend
 
-| Technology                                    | Role                                                                                                                                                                                                                                                 |
-| --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Next.js 15** (App Router, Turbopack)        | Production-grade React framework: server components, file-based routing, code splitting, image optimization. Dev server runs on port **5173**.                                                                                                       |
-| **React 19**                                  | Declarative, component-based UI library with concurrent rendering.                                                                                                                                                                                   |
-| **TypeScript 5.8**                            | Static typing across the whole frontend for safety and maintainability.                                                                                                                                                                              |
-| **Zustand 5**                                 | Minimal, boilerplate-free global state management (used for auth state).                                                                                                                                                                             |
-| **TanStack Query 5**                          | Data fetching with caching, background updates, and synchronization.                                                                                                                                                                                 |
-| **Custom Fetch HTTP client**                  | A typed wrapper over the native Fetch API with automatic JWT refresh and a request queue. (The project migrated away from Axios to this lightweight client - see [`frontend/src/services/http-client.ts`](../frontend/src/services/http-client.ts).) |
-| **React Hook Form 7**                         | Efficient, low-re-render form handling.                                                                                                                                                                                                              |
-| **Hookform Resolvers + Zod 3**                | Schema-based validation with type inference shared between runtime and compile time.                                                                                                                                                                 |
-| **Tailwind CSS 3.4 + shadcn/ui (Radix UI)**   | Utility-first styling plus an accessible component library.                                                                                                                                                                                          |
-| **Leaflet + React Leaflet (+ markercluster)** | Interactive maps for event locations.                                                                                                                                                                                                                |
-| **@microsoft/signalr**                        | Client for real-time chat and notifications.                                                                                                                                                                                                         |
-| **PostCSS**                                   | CSS transformation pipeline.                                                                                                                                                                                                                         |
-| Supporting libraries                          | Embla Carousel, React Day Picker, Sonner (toasts), date-fns, next-themes, lucide-react / react-icons, jose.                                                                                                                                          |
-| **pnpm**                                      | Package manager.                                                                                                                                                                                                                                     |
+| Technology                                    | Role                                                                                                                                                                                                                                                     |
+| --------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Vite 8**                                    | Dev server and production bundler (Rolldown). Dev server runs on port **5173**, the origin the API's CORS policy allows.                                                                                                                                 |
+| **React 19** + React Compiler                 | Declarative, component-based UI library; the React Compiler memoizes components automatically at build time.                                                                                                                                             |
+| **React Router 8**                            | Client-side routing, route guards (`ProtectedRoute`, `RedirectIfAuthenticated`) and lazily loaded pages.                                                                                                                                                 |
+| **TypeScript 5.9**                            | Static typing across the whole frontend for safety and maintainability.                                                                                                                                                                                  |
+| **Zustand 5**                                 | Minimal, boilerplate-free global state management (used for auth state).                                                                                                                                                                                 |
+| **TanStack Query 5**                          | Data fetching with caching, background updates, and synchronization.                                                                                                                                                                                     |
+| **Custom Fetch HTTP client**                  | A typed wrapper over the native Fetch API with automatic JWT refresh and a request queue. (The project migrated away from Axios to this lightweight client - see [`frontend/src/shared/api/http-client.ts`](../frontend/src/shared/api/http-client.ts).) |
+| **React Hook Form 7**                         | Efficient, low-re-render form handling.                                                                                                                                                                                                                  |
+| **Zod 4**                                     | Schema-based validation with type inference shared between runtime and compile time, wired into forms by a small shared resolver.                                                                                                                        |
+| **Tailwind CSS 3.4 + shadcn/ui (Radix UI)**   | Utility-first styling plus an accessible component library.                                                                                                                                                                                              |
+| **Leaflet + React Leaflet (+ markercluster)** | Interactive maps for event locations, loaded only with the events page.                                                                                                                                                                                  |
+| **@microsoft/signalr**                        | Client for real-time chat and notifications.                                                                                                                                                                                                             |
+| **PostCSS**                                   | CSS transformation pipeline (runs Tailwind).                                                                                                                                                                                                             |
+| **ESLint 10 + typescript-eslint**             | Linting, including the React Hooks and React Compiler rules.                                                                                                                                                                                             |
+| Supporting libraries                          | Embla Carousel, React Day Picker, Sonner (toasts), date-fns, lucide-react / react-icons.                                                                                                                                                                 |
 
 ### Backend (.NET 9)
 
@@ -201,7 +202,7 @@ The backend follows **Clean Architecture**, with a strict dependency rule: sourc
 ┌──────────────────────────────────────────────────────────────┐
 │  Presentation Layer  -  TuneSpace.Api  +  Frontend           │
 │  • REST controllers, SignalR hub, middleware                 │
-│  • React components, App Router pages, client-side state     │
+│  • React components, routed feature views, client-side state │
 ├──────────────────────────────────────────────────────────────┤
 │  Application Layer  -  TuneSpace.Application                  │
 │  • Business services (use cases)                             │
@@ -262,27 +263,17 @@ TuneSpace/
 │   ├── TuneSpace.Infrastructure/  # Data access, external clients, identity
 │   └── TuneSpace.Tests/           # Automated tests
 ├── frontend/
-│   └── src/                       # Next.js application source
+│   └── src/                       # Vite + React application source
 └── docs/                          # Project documentation
 ```
 
 ### Frontend ([`frontend/src`](../frontend/src))
 
-| Folder       | Purpose                                                                                                                                                          |
-| ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `actions`    | Next.js server actions and form-handling logic.                                                                                                                  |
-| `app`        | App Router routes, layouts, and pages.                                                                                                                           |
-| `components` | Reusable React components (TSX), organized by domain (`auth`, `band`, `discovery`, `events`, `social`, `spotify`, `user`, plus a `shadcn` UI primitives folder). |
-| `hooks`      | Custom React hooks, primarily for fetching and managing server data.                                                                                             |
-| `interfaces` | TypeScript types and interfaces.                                                                                                                                 |
-| `layouts`    | Layout wrappers (sidebar, header, etc.).                                                                                                                         |
-| `lib`        | Helper libraries.                                                                                                                                                |
-| `providers`  | React context providers.                                                                                                                                         |
-| `schemas`    | Zod validation schemas.                                                                                                                                          |
-| `services`   | API client functions, one file per domain, all built on the shared `http-client`.                                                                                |
-| `stores`     | Zustand stores (e.g. `auth-store`).                                                                                                                              |
-| `styles`     | Global Tailwind CSS styles.                                                                                                                                      |
-| `utils`      | Helper functions and constants (API endpoints, route definitions).                                                                                               |
+| Folder     | Purpose                                                                                                                                                                                                                                                                                |
+| ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `app`      | The application shell: `App.tsx`, the route table (`routes`), layouts, route guards, providers, and global Tailwind styles.                                                                                                                                                            |
+| `features` | One folder per feature (`auth`, `band`, `discovery`, `events`, `forums`, `home`, `landing`, `messages`, `news`, `notifications`, `profile`). Each holds its own `api` (services), `components`, `hooks`, `schemas`, `types` and routed `views`, and exports its views from `index.ts`. |
+| `shared`   | Code used across features and never importing from them: the `api` HTTP client, `auth` (store, hooks, service), `realtime` (SignalR provider), `spotify` integration, `theme`, `forms` (Zod resolver), the shadcn `ui` kit, `hooks`, shared `types`, and `utils` (constants, helpers). |
 
 Route groups under `app/`:
 
@@ -622,7 +613,7 @@ Planned enhancements that extend the platform's value:
 
 ## Conclusion
 
-TuneSpace demonstrates a complete, innovative, and technologically modern approach to building a music platform enriched with AI. It integrates a layered architecture - Next.js on the frontend, a .NET 9 API for backend logic, and PostgreSQL with `pgvector` for storage and vector processing - into a stable, scalable foundation.
+TuneSpace demonstrates a complete, innovative, and technologically modern approach to building a music platform enriched with AI. It integrates a layered architecture - a Vite + React single-page app on the frontend, a .NET 9 API for backend logic, and PostgreSQL with `pgvector` for storage and vector processing - into a stable, scalable foundation.
 
 By combining personalized AI recommendations, underground-artist discovery, and intelligent matching of musical tastes with vector search and advanced algorithms, and by layering real-time SignalR communication onto a responsive web interface, TuneSpace becomes a dynamic, interactive environment for both fans and artists. Built around clean code, modularity, and clean architecture - and integrating Spotify, Bandcamp, Last.fm, and more - it not only solves real needs of the music community but also shows how technology can enrich and transform the way we discover and experience music.
 
