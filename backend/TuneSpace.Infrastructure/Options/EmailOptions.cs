@@ -9,4 +9,5 @@ public class EmailOptions
     public bool EnableSsl { get; set; } = true;
     public string FromEmail { get; set; } = string.Empty;
     public string FromName { get; set; } = string.Empty;
+    public bool RequireConfirmation { get; set; } = true;
 }

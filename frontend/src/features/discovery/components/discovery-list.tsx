@@ -1,5 +1,9 @@
 import { useQuery } from "@tanstack/react-query";
-import { BASE_URL, ENDPOINTS, SPOTIFY_ENDPOINTS } from "@/shared/utils/constants";
+import {
+  BASE_URL,
+  ENDPOINTS,
+  SPOTIFY_ENDPOINTS,
+} from "@/shared/utils/constants";
 import Loading from "@/shared/ui/loading";
 import { useState, useEffect } from "react";
 import httpClient from "@/shared/api/http-client";
@@ -57,11 +61,11 @@ interface DiscoveryArtist {
 const fetchDiscover = async (
   genreSet: Set<string>,
   useLocation: boolean,
-  location: string = "BG"
+  location: string = "BG",
 ) => {
   const genresParam = Array.from(genreSet).join(",");
   let url = `${ENDPOINTS.RECOMMENDATIONS}?genres=${encodeURIComponent(
-    genresParam
+    genresParam,
   )}`;
 
   if (useLocation) {
@@ -89,7 +93,7 @@ const DiscoveryList = () => {
     useState<UserPreferences | null>(() => {
       if (typeof window !== "undefined") {
         const savedPreferences = localStorage.getItem(
-          "tuneSpaceManualPreferences"
+          "tuneSpaceManualPreferences",
         );
         return savedPreferences ? JSON.parse(savedPreferences) : null;
       }
@@ -175,7 +179,7 @@ const DiscoveryList = () => {
     if (typeof window !== "undefined") {
       localStorage.setItem(
         "tuneSpaceManualPreferences",
-        JSON.stringify(preferences)
+        JSON.stringify(preferences),
       );
     }
 
@@ -208,9 +212,8 @@ const DiscoveryList = () => {
     ],
     queryFn: async () => {
       if (useManualPreferences && currentPreferences) {
-        const response = await getRecommendationsByPreferences(
-          currentPreferences
-        );
+        const response =
+          await getRecommendationsByPreferences(currentPreferences);
         return response.recommendations || response;
       } else {
         const genreSet = new Set(["metal", "rock"]);
@@ -373,7 +376,9 @@ const DiscoveryList = () => {
                 <Button
                   size="sm"
                   onClick={() =>
-                    navigate(`${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`)
+                    window.location.assign(
+                      `${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`,
+                    )
                   }
                 >
                   Connect Spotify
@@ -517,7 +522,7 @@ const DiscoveryList = () => {
             <TooltipProvider key={index}>
               <div
                 className={`group relative bg-gradient-to-br ${getGenreColor(
-                  artist.genres
+                  artist.genres,
                 )} backdrop-blur-sm rounded-2xl border transition-all duration-300 hover:shadow-xl hover:scale-[1.02] hover:shadow-primary/10 flex flex-col h-full`}
               >
                 <div className="relative h-32 overflow-hidden rounded-t-2xl">

@@ -21,13 +21,10 @@ import {
   User,
   AudioLines,
 } from "lucide-react";
-import {
-  Avatar,
-  AvatarFallback,
-  AvatarImage,
-} from "@/shared/ui/avatar";
+import { Avatar, AvatarFallback, AvatarImage } from "@/shared/ui/avatar";
 import useAuth from "@/shared/auth/hooks/useAuth";
 import { ROUTES } from "@/shared/utils/constants";
+import { BAND_DASHBOARD_ROLES, hasRole } from "@/shared/auth/permissions";
 import useLogout from "@/shared/auth/hooks/useLogout";
 import { cn } from "@/shared/utils/cn";
 import useProfileData from "@/features/profile/hooks/useProfileData";
@@ -51,7 +48,7 @@ export function AppSidebar() {
 
   const { profile } = useProfileData(
     auth?.username || "",
-    auth?.username || ""
+    auth?.username || "",
   );
 
   const userInitials = auth?.username
@@ -83,10 +80,12 @@ export function AppSidebar() {
     },
   ];
 
+  // Users without a band role can't open the dashboard, so point them at band registration instead.
+  const canAccessBandDashboard = hasRole(auth?.role, BAND_DASHBOARD_ROLES);
   const bandDashboardLink: NavLinkItem = {
     id: 4,
-    to: ROUTES.BAND_DASHBOARD,
-    text: "Band Dashboard",
+    to: canAccessBandDashboard ? ROUTES.BAND_DASHBOARD : ROUTES.BAND_REGISTER,
+    text: canAccessBandDashboard ? "Band Dashboard" : "Create Band",
     icon: <DiscAlbum className="h-4 w-4" />,
     group: "navigation",
   };
@@ -141,7 +140,7 @@ export function AppSidebar() {
                 "group border border-transparent",
                 "hover:border-indigo-500/20 hover:animate-[border-pulse-subtle_1.5s_ease_infinite]",
                 isActive &&
-                  "bg-gradient-to-r from-sidebar-accent to-sidebar-accent/30 font-medium"
+                  "bg-gradient-to-r from-sidebar-accent to-sidebar-accent/30 font-medium",
               )}
             >
               <div
@@ -149,19 +148,21 @@ export function AppSidebar() {
                   "absolute inset-y-0 w-1 left-0 rounded-full transition-all duration-300",
                   isActive
                     ? "bg-indigo-500 shadow-[0_0_8px_rgba(var(--sidebar-primary-rgb),0.5)]"
-                    : "bg-transparent group-hover:bg-indigo-500/30"
+                    : "bg-transparent group-hover:bg-indigo-500/30",
                 )}
               />
               <div
                 className={cn(
                   "relative z-10 flex items-center gap-2",
-                  "transition-colors duration-300"
+                  "transition-colors duration-300",
                 )}
               >
                 <span
                   className={cn(
                     "text-indigo-200/80 transition-colors duration-300",
-                    isActive ? "text-indigo-100" : "group-hover:text-indigo-300"
+                    isActive
+                      ? "text-indigo-100"
+                      : "group-hover:text-indigo-300",
                   )}
                 >
                   {link.icon}
@@ -185,7 +186,7 @@ export function AppSidebar() {
           "px-4 py-3 m-2 rounded-lg transition-all duration-300 cursor-pointer",
           pathname.startsWith(`${ROUTES.PROFILE}/${auth?.username}`)
             ? "bg-gradient-to-r from-indigo-900/50 via-indigo-600/30 to-indigo-900/50 text-white shadow-md border border-indigo-500/30 animate-[gradient-shift_3s_ease_infinite]"
-            : "text-gray-400 hover:text-white hover:bg-white/5 hover:shadow-sm"
+            : "text-gray-400 hover:text-white hover:bg-white/5 hover:shadow-sm",
         )}
         onClick={() => navigate(`${ROUTES.PROFILE}/${auth?.username}`)}
       >
@@ -195,7 +196,7 @@ export function AppSidebar() {
               "h-10 w-10 border-2 shadow-md transition-all duration-300",
               pathname.startsWith(`${ROUTES.PROFILE}/${auth?.username}`)
                 ? "border-indigo-500 shadow-indigo-500/20"
-                : "border-sidebar-accent hover:border-indigo-400"
+                : "border-sidebar-accent hover:border-indigo-400",
             )}
           >
             <AvatarImage
@@ -216,7 +217,7 @@ export function AppSidebar() {
                 "text-xs truncate",
                 pathname.startsWith(`${ROUTES.PROFILE}/${auth?.username}`)
                   ? "text-gray-200"
-                  : "text-gray-400"
+                  : "text-gray-400",
               )}
             >
               {auth?.role || "User"}
@@ -227,7 +228,7 @@ export function AppSidebar() {
               "h-4 w-4",
               pathname.startsWith(`${ROUTES.PROFILE}/${auth?.username}`)
                 ? "text-white"
-                : "text-gray-400"
+                : "text-gray-400",
             )}
           />
         </div>

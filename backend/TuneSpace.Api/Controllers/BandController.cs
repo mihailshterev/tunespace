@@ -105,14 +105,23 @@ public class BandController(
     }
 
     [HttpPost("register")]
+    [Authorize]
     public async Task<IActionResult> CreateBand([FromForm] BandCreateRequest request)
     {
         try
         {
+            var userId = User.GetUserId().ToString();
+
+            // Creating a band promotes the creator to BandAdmin, so a member of another band would gain admin rights over it.
+            if (await _bandService.GetBandByUserIdAsync(userId) is not null)
+            {
+                return Conflict("You already belong to a band");
+            }
+
             var fileDto = await Helpers.ConvertToFileDto(request.Picture);
 
             var createBandRequest = new CreateBandRequest(
-                request.UserId,
+                userId,
                 request.Name,
                 request.Description,
                 request.Genre,
@@ -137,6 +146,7 @@ public class BandController(
     }
 
     [HttpPost("add-member")]
+    [Authorize]
     public async Task<IActionResult> AddMemberToBand([FromBody] AddMemberRequest request)
     {
         var userId = request.UserId;
@@ -154,6 +164,11 @@ public class BandController(
 
         try
         {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), parsedBandId))
+            {
+                return Forbid();
+            }
+
             await _bandService.AddMemberToBandAsync(parsedUserId, parsedBandId);
             return Ok("Member added successfully");
         }
@@ -170,6 +185,11 @@ public class BandController(
     {
         try
         {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), request.Id))
+            {
+                return Forbid();
+            }
+
             var fileDto = await Helpers.ConvertToFileDto(request.Picture);
 
             var updateBandRequest = new UpdateBandRequest(
@@ -208,6 +228,11 @@ public class BandController(
 
         try
         {
+            if (!await _bandService.CanManageBandAsync(User.GetUserId(), parsedBandId))
+            {
+                return Forbid();
+            }
+
             await _bandService.DeleteBandAsync(parsedBandId);
             return Ok("Band deleted successfully");
         }

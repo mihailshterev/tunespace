@@ -306,11 +306,21 @@ internal class BandService(
                 return;
             }
 
+            if (band.Members.Any(m => m.Id == user.Id))
+            {
+                _logger.LogWarning("User is already a member of the band");
+                return;
+            }
+
             band.Members.Add(user);
             await _bandRepository.UpdateBandAsync(band);
 
-            user.Role = Roles.BandMember;
-            await _userRepository.UpdateUserAsync(user);
+            // Only promote listeners; never demote an admin or band admin by adding them to a band.
+            if (user.Role == Roles.Listener)
+            {
+                user.Role = Roles.BandMember;
+                await _userRepository.UpdateUserAsync(user);
+            }
 
             _logger.LogInformation("User added to band successfully");
         }
@@ -319,6 +329,28 @@ internal class BandService(
             _logger.LogError(ex, "Error adding user to band");
             throw;
         }
+    }
+
+    async Task<bool> IBandService.CanManageBandAsync(Guid userId, Guid bandId)
+    {
+        var user = await _userRepository.GetUserByIdAsync(userId.ToString());
+        if (user == null)
+        {
+            return false;
+        }
+
+        if (user.Role == Roles.Admin)
+        {
+            return true;
+        }
+
+        if (user.Role != Roles.BandAdmin)
+        {
+            return false;
+        }
+
+        var band = await _bandRepository.GetBandByIdAsync(bandId);
+        return band?.Members?.Any(m => m.Id == userId) ?? false;
     }
 
     async Task IBandService.DeleteBandAsync(Guid id)

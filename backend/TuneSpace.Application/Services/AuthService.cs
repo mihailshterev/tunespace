@@ -1,11 +1,13 @@
 using System.Text.RegularExpressions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using TuneSpace.Core.DTOs.Responses.Auth;
 using TuneSpace.Core.Entities;
 using TuneSpace.Core.Enums;
 using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
+using TuneSpace.Infrastructure.Options;
 
 namespace TuneSpace.Application.Services;
 
@@ -15,7 +17,8 @@ internal partial class AuthService(
     ITokenService tokenService,
     IEmailService emailService,
     IUrlBuilderService urlBuilderService,
-    UserManager<User> userManager) : IAuthService
+    UserManager<User> userManager,
+    IOptions<EmailOptions> emailOptions) : IAuthService
 {
     private readonly IUserRepository _userRepository = userRepository;
     private readonly IPasswordHasher<User> _passwordHasher = passwordHasher;
@@ -23,6 +26,7 @@ internal partial class AuthService(
     private readonly IEmailService _emailService = emailService;
     private readonly IUrlBuilderService _urlBuilderService = urlBuilderService;
     private readonly UserManager<User> _userManager = userManager;
+    private readonly EmailOptions _emailOptions = emailOptions.Value;
 
     async Task IAuthService.RegisterAsync(string name, string email, string password, Roles role)
     {
@@ -31,15 +35,25 @@ internal partial class AuthService(
             throw new ArgumentException("Username already taken");
         }
 
+        if (await _userRepository.GetUserByEmailAsync(email) is not null)
+        {
+            throw new ArgumentException("Email already registered");
+        }
+
         var user = new User
         {
             UserName = name,
             Email = email,
-            EmailConfirmed = false,
+            EmailConfirmed = !_emailOptions.RequireConfirmation,
             Role = role
         };
 
         await _userRepository.InsertUserAsync(user, password);
+
+        if (!_emailOptions.RequireConfirmation)
+        {
+            return;
+        }
 
         var insertedUser = await _userRepository.GetUserByEmailAsync(email);
         if (insertedUser is not null)
@@ -60,7 +74,7 @@ internal partial class AuthService(
             throw new UnauthorizedException("Incorrect email or password");
         }
 
-        if (!await _userManager.IsEmailConfirmedAsync(user))
+        if (_emailOptions.RequireConfirmation && !await _userManager.IsEmailConfirmedAsync(user))
         {
             throw new UnauthorizedException("Please confirm your email address before logging in. Check your inbox for the confirmation link.");
         }

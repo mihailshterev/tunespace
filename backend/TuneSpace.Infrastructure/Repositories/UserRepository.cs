@@ -41,10 +41,12 @@ internal class UserRepository(UserManager<User> userManager) : IUserRepository
     async Task IUserRepository.InsertUserAsync(User user, string password)
     {
         var result = await _userManager.CreateAsync(user, password);
-        if (result.Succeeded)
+        if (!result.Succeeded)
         {
-            await _userManager.AddToRoleAsync(user, user.Role.ToString());
+            throw new ArgumentException(string.Join(" ", result.Errors.Select(e => e.Description)));
         }
+
+        await _userManager.AddToRoleAsync(user, user.Role.ToString());
     }
 
     async Task IUserRepository.InsertExternalUserAsync(User user)

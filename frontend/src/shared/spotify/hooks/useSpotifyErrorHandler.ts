@@ -5,7 +5,6 @@ import { useQuery } from "@tanstack/react-query";
 import { getSpotifyConnectionStatus } from "@/shared/spotify/api/spotify.service";
 import useAuth from "@/shared/auth/hooks/useAuth";
 import { BASE_URL, SPOTIFY_ENDPOINTS } from "@/shared/utils/constants";
-import { useNavigate } from "react-router";
 
 export interface SpotifyError {
   type:
@@ -20,7 +19,6 @@ export interface SpotifyError {
 }
 
 export const useSpotifyErrorHandler = () => {
-  const navigate = useNavigate();
   const { isAuthenticated, isLoggingOut } = useAuth();
 
   const { data: connectionStatus, refetch: refetchConnectionStatus } = useQuery(
@@ -136,7 +134,9 @@ export const useSpotifyErrorHandler = () => {
                   ? {
                       label: "Reconnect Spotify",
                       onClick: () =>
-                        navigate(`${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`),
+                        window.location.assign(
+                          `${BASE_URL}/${SPOTIFY_ENDPOINTS.CONNECT}`,
+                        ),
                     }
                   : undefined,
             });
@@ -164,7 +164,7 @@ export const useSpotifyErrorHandler = () => {
       }
       return spotifyError;
     },
-    [parseSpotifyError, navigate, isLoggingOut, isAuthenticated],
+    [parseSpotifyError, isLoggingOut, isAuthenticated],
   );
 
   const isSpotifyConnected = useCallback(() => {

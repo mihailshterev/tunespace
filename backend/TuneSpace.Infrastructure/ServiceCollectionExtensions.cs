@@ -88,6 +88,7 @@ public static class ServiceCollectionExtensions
             options.Password.RequireUppercase = false;
             options.Password.RequireNonAlphanumeric = false;
             options.Password.RequiredLength = 6;
+            options.User.RequireUniqueEmail = true;
         }).AddRoles<ApplicationRole>()
         .AddEntityFrameworkStores<TuneSpaceDbContext>()
         .AddDefaultTokenProviders();
@@ -99,6 +100,9 @@ public static class ServiceCollectionExtensions
     {
         var emailOptions = services.BuildServiceProvider().GetRequiredService<IOptionsSnapshot<EmailOptions>>().Value;
 
+        var pickupDirectory = Path.Combine(Directory.GetCurrentDirectory(), "Emails");
+        Directory.CreateDirectory(pickupDirectory);
+
         services.AddFluentEmail(emailOptions.FromEmail, emailOptions.FromName)
             .AddSmtpSender(() =>
             {
@@ -107,7 +111,7 @@ public static class ServiceCollectionExtensions
                     //TODO: Set up gmail SMTP
                     //local emails for now
                     DeliveryMethod = SmtpDeliveryMethod.SpecifiedPickupDirectory,
-                    PickupDirectoryLocation = @"C:\Emails",
+                    PickupDirectoryLocation = pickupDirectory,
                     EnableSsl = false,
                 };
             });

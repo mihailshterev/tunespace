@@ -1,5 +1,6 @@
 using FluentAssertions;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.Extensions.Options;
 using Moq;
 using TuneSpace.Application.Services;
 using TuneSpace.Core.Entities;
@@ -7,6 +8,7 @@ using TuneSpace.Core.Enums;
 using TuneSpace.Core.Exceptions;
 using TuneSpace.Core.Interfaces.IRepositories;
 using TuneSpace.Core.Interfaces.IServices;
+using TuneSpace.Infrastructure.Options;
 
 namespace TuneSpace.Tests.Unit.Services;
 
@@ -37,7 +39,8 @@ public class AuthServiceTests
             _mockTokenService.Object,
             _mockEmailService.Object,
             _mockUrlBuilderService.Object,
-            _mockUserManager.Object);
+            _mockUserManager.Object,
+            Options.Create(new EmailOptions()));
     }
 
     [Fact]
@@ -69,7 +72,8 @@ public class AuthServiceTests
             .Returns(Task.CompletedTask);
 
         _mockUserRepository
-            .Setup(x => x.GetUserByEmailAsync(email))
+            .SetupSequence(x => x.GetUserByEmailAsync(email))
+            .ReturnsAsync((User?)null)
             .ReturnsAsync(insertedUser);
 
         _mockUserManager
@@ -89,7 +93,7 @@ public class AuthServiceTests
         _mockUserRepository.Verify(x => x.GetUserByNameAsync(name), Times.Once);
         _mockUserRepository.Verify(x => x.InsertUserAsync(It.Is<User>(u =>
             u.UserName == name && u.Email == email && u.Role == role && !u.EmailConfirmed), password), Times.Once);
-        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Once);
+        _mockUserRepository.Verify(x => x.GetUserByEmailAsync(email), Times.Exactly(2));
         _mockUserManager.Verify(x => x.GenerateEmailConfirmationTokenAsync(insertedUser), Times.Once);
         _mockUrlBuilderService.Verify(x => x.BuildEmailConfirmationUrl(userId.ToString(), token), Times.Once);
         _mockEmailService.Verify(x => x.SendEmailConfirmationAsync(insertedUser, token, confirmationUrl), Times.Once);

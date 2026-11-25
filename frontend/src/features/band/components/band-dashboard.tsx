@@ -24,9 +24,11 @@ import useBandChat from "@/features/band/hooks/useBandChat";
 import { useSpotifyErrorHandler } from "@/shared/spotify/hooks/useSpotifyErrorHandler";
 import SpotifyFallback from "@/shared/spotify/components/spotify-fallback";
 import { Link } from "react-router";
+import { BAND_MANAGER_ROLES, hasRole } from "@/shared/auth/permissions";
 
 const BandDashboard = () => {
   const { auth } = useAuth();
+  const canManageBand = hasRole(auth?.role, BAND_MANAGER_ROLES);
 
   const { bandData, mutations, isBandLoading, isBandError, bandError } =
     useBandData(auth?.id || "");
@@ -102,7 +104,7 @@ const BandDashboard = () => {
         `Failed to connect Spotify: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
-        { duration: 5000 }
+        { duration: 5000 },
       );
       console.error("Spotify connection error:", error);
     }
@@ -122,7 +124,7 @@ const BandDashboard = () => {
         `Failed to update YouTube embed: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
-        { duration: 5000 }
+        { duration: 5000 },
       );
       console.error("YouTube embed update error:", error);
     }
@@ -155,7 +157,7 @@ const BandDashboard = () => {
         `Failed to update band: ${
           error instanceof Error ? error.message : "Unknown error"
         }`,
-        { duration: 5000 }
+        { duration: 5000 },
       );
       console.error("Band update error:", error);
     }
@@ -279,10 +281,12 @@ const BandDashboard = () => {
     <div className="flex flex-col items-start gap-6 py-8 w-full">
       <div className="flex flex-wrap justify-between items-center w-full mb-2">
         <h1 className="text-4xl font-bold">Band Dashboard</h1>
-        <EditBandDialog
-          band={bandData?.band}
-          handleBandUpdate={handleBandUpdate}
-        />
+        {canManageBand && (
+          <EditBandDialog
+            band={bandData?.band}
+            handleBandUpdate={handleBandUpdate}
+          />
+        )}
       </div>
       <Card className="w-full shadow-md border-2 border-muted/20">
         <CardHeader className="pb-0">
@@ -345,9 +349,13 @@ const BandDashboard = () => {
                       <p className="text-muted-foreground mb-4">
                         No video added yet
                       </p>
-                      <YouTubeEmbedDialog
-                        handleYouTubeEmbedIdUpdate={handleYouTubeEmbedIdUpdate}
-                      />
+                      {canManageBand && (
+                        <YouTubeEmbedDialog
+                          handleYouTubeEmbedIdUpdate={
+                            handleYouTubeEmbedIdUpdate
+                          }
+                        />
+                      )}
                     </div>
                   )}
                 </CardContent>
@@ -429,17 +437,19 @@ const BandDashboard = () => {
                           }`}
                           showExploreButton={false}
                           connectButtonDisabled={
-                            !isSpotifyConnected() && bandData.band?.spotifyId
-                              ? true
-                              : false
+                            !canManageBand ||
+                            (!isSpotifyConnected() &&
+                              !!bandData.band?.spotifyId)
                           }
                           onConnectSpotify={() => setIsSpotifyDialogOpen(true)}
                         />
-                        <ConnectSpotifyDialog
-                          handleSpotifyIdUpdate={handleSpotifyIdUpdate}
-                          open={isSpotifyDialogOpen}
-                          onOpenChange={setIsSpotifyDialogOpen}
-                        />
+                        {canManageBand && (
+                          <ConnectSpotifyDialog
+                            handleSpotifyIdUpdate={handleSpotifyIdUpdate}
+                            open={isSpotifyDialogOpen}
+                            onOpenChange={setIsSpotifyDialogOpen}
+                          />
+                        )}
                       </>
                     </div>
                   )}
@@ -487,7 +497,7 @@ const BandDashboard = () => {
                                   hour: "2-digit",
                                   minute: "2-digit",
                                   hour12: false,
-                                }
+                                },
                               )}
                             </span>
                           </div>
@@ -636,16 +646,18 @@ const BandDashboard = () => {
               <CardHeader className="bg-muted/10 pb-2">
                 <CardTitle className="flex items-center gap-2">
                   <span>Band Members</span>
-                  <UserSearchDialog
-                    trigger={
-                      <button className="ml-auto text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
-                        Add Member
-                      </button>
-                    }
-                    title="Add Band Member"
-                    onSelectUser={handleAddMember}
-                    buttonText="Add to Band"
-                  />
+                  {canManageBand && (
+                    <UserSearchDialog
+                      trigger={
+                        <button className="ml-auto text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
+                          Add Member
+                        </button>
+                      }
+                      title="Add Band Member"
+                      onSelectUser={handleAddMember}
+                      buttonText="Add to Band"
+                    />
+                  )}
                 </CardTitle>
               </CardHeader>
               <CardContent className="p-4">

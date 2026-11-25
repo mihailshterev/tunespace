@@ -4,9 +4,18 @@ import { BareLayout } from "../layouts/bare-layout";
 import { LandingLayout } from "../layouts/landing-layout";
 import { ProtectedRoute } from "../guards/protected-route";
 import { RedirectIfAuthenticated } from "../guards/redirect-if-authenticated";
+import { RequireRole } from "../guards/require-role";
+import { BAND_DASHBOARD_ROLES } from "@/shared/auth/permissions";
+import { ROUTES } from "@/shared/utils/constants";
 import { NotFoundPage } from "./not-found-page";
 import { EventsPage } from "./events-page";
-import { AboutView, CopyrightView, LandingView, PrivacyView, TermsView } from "@/features/landing";
+import {
+  AboutView,
+  CopyrightView,
+  LandingView,
+  PrivacyView,
+  TermsView,
+} from "@/features/landing";
 import {
   ConfirmEmailChangeView,
   ConfirmEmailView,
@@ -24,8 +33,19 @@ import { NewsView } from "@/features/news";
 import { NotificationsView } from "@/features/notifications";
 import { ProfileView } from "@/features/profile";
 import { ChatView, MessagesView } from "@/features/messages";
-import { ForumCategoryView, ForumThreadView, ForumsView, NewCategoryView, NewThreadView } from "@/features/forums";
-import { BandChatView, BandDashboardView, BandRegisterView, BandShowcaseView } from "@/features/band";
+import {
+  ForumCategoryView,
+  ForumThreadView,
+  ForumsView,
+  NewCategoryView,
+  NewThreadView,
+} from "@/features/forums";
+import {
+  BandChatView,
+  BandDashboardView,
+  BandRegisterView,
+  BandShowcaseView,
+} from "@/features/band";
 
 export const routes: RouteObject[] = [
   {
@@ -58,11 +78,17 @@ export const routes: RouteObject[] = [
     children: [
       { path: "confirm-email", element: <ConfirmEmailView /> },
       { path: "confirm-email-change", element: <ConfirmEmailChangeView /> },
-      { path: "email-confirmation-sent", element: <EmailConfirmationSentView /> },
+      {
+        path: "email-confirmation-sent",
+        element: <EmailConfirmationSentView />,
+      },
       { path: "forgot-password", element: <ForgotPasswordView /> },
       { path: "reset-password", element: <ResetPasswordView /> },
       { path: "spotify-callback", element: <SpotifyCallbackView /> },
-      { path: "spotify-connect-callback", element: <SpotifyConnectCallbackView /> },
+      {
+        path: "spotify-connect-callback",
+        element: <SpotifyConnectCallbackView />,
+      },
     ],
   },
   {
@@ -85,7 +111,17 @@ export const routes: RouteObject[] = [
       { path: "forums/:categoryId", element: <ForumCategoryView /> },
       { path: "forums/:categoryId/new", element: <NewThreadView /> },
       { path: "forums/:categoryId/:threadId", element: <ForumThreadView /> },
-      { path: "band/dashboard", element: <BandDashboardView /> },
+      {
+        path: "band/dashboard",
+        element: (
+          <RequireRole
+            roles={BAND_DASHBOARD_ROLES}
+            redirectTo={ROUTES.BAND_REGISTER}
+          >
+            <BandDashboardView />
+          </RequireRole>
+        ),
+      },
       { path: "band/register", element: <BandRegisterView /> },
       { path: "band/:bandId", element: <BandShowcaseView /> },
       { path: "band/:bandId/chat/:id", element: <BandChatView /> },
