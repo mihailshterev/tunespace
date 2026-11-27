@@ -432,11 +432,11 @@ Relevant endpoints: `POST /api/Auth/login`, `POST /api/Auth/refresh-token`, `POS
 
 Musicians use TuneSpace to create and manage bands and maintain a professional presence. Registration supports solo projects, existing groups registering together, or members invited to build a profile collaboratively.
 
-After creation, the founder automatically receives the **administrator** role with full rights. Administrators can add members and assign roles (vocalist, guitarist, etc.) and define each member's access and edit capabilities. The band dashboard offers profile-customization tooling: uploading images, adding links, and editing the biography.
+After creation, the founder automatically receives the **administrator** role with full rights. Administrators can invite members, who join once they accept the invitation, and assign roles (vocalist, guitarist, etc.) and define each member's access and edit capabilities. The band dashboard offers profile-customization tooling: uploading images, adding links, and editing the biography.
 
 Event management is central: administrators create music events with descriptions, locations, dates, and ticket details. The platform includes promotion tooling through built-in social features, fan RSVP, and automatic notifications for upcoming concerts. A complete merchandise-management system lets administrators upload product images and descriptions and set prices.
 
-Relevant endpoints: `POST /api/Band/register`, `POST /api/Band/add-member`, `PUT /api/Band/update`, the `MusicEvent` controller, and the `Merchandise` controller.
+Relevant endpoints: `POST /api/Band/register`, `POST /api/BandInvitation/band/{bandId}`, `PUT /api/Band/update`, the `MusicEvent` controller, and the `Merchandise` controller.
 
 ### 11.4 Band Chat
 
@@ -496,7 +496,11 @@ The REST API is organized into twelve controllers under the `/api/[controller]` 
 
 ### Band - `/api/Band`
 
-`GET {bandId}` · `GET user/{userId}` · `GET {bandId}/image` · `POST register` · `POST add-member` · `PUT update` · `DELETE {bandId}` · `GET {bandId}/followers` · `GET {bandId}/follower-count` · `GET {bandId}/is-following` · `POST {bandId}/follow` · `DELETE {bandId}/unfollow` · `GET user/{userId}/followed-bands` · `GET user/{userId}/followed-bands-count`
+`GET {bandId}` · `GET user/{userId}` · `GET {bandId}/image` · `POST register` · `PUT update` · `DELETE {bandId}` · `DELETE {bandId}/members/{userId}` · `PUT {bandId}/members/{userId}/role` · `GET {bandId}/followers` · `GET {bandId}/follower-count` · `GET {bandId}/is-following` · `POST {bandId}/follow` · `DELETE {bandId}/unfollow` · `GET user/{userId}/followed-bands` · `GET user/{userId}/followed-bands-count`
+
+### BandInvitation - `/api/BandInvitation`
+
+`GET mine` · `POST {invitationId}/accept` · `POST {invitationId}/decline` · `GET band/{bandId}` · `POST band/{bandId}` · `DELETE band/{bandId}/{invitationId}`
 
 ### MusicDiscovery - `/api/MusicDiscovery`
 

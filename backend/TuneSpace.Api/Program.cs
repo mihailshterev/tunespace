@@ -1,9 +1,11 @@
 using Microsoft.AspNetCore.Identity;
+using Microsoft.EntityFrameworkCore;
 using Serilog;
 using TuneSpace.Api.Infrastructure;
 using TuneSpace.Api.Middleware;
 using TuneSpace.Application;
 using TuneSpace.Infrastructure;
+using TuneSpace.Infrastructure.Data;
 using TuneSpace.Infrastructure.Hubs;
 using TuneSpace.Infrastructure.Identity;
 using TuneSpace.Infrastructure.Seeding;
@@ -58,6 +60,11 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var services = scope.ServiceProvider;
+
+    // Bring the database schema up to date before anything (seeders included) queries it.
+    var dbContext = services.GetRequiredService<TuneSpaceDbContext>();
+    await dbContext.Database.MigrateAsync();
+
     var roleManager = services.GetRequiredService<RoleManager<ApplicationRole>>();
     var roleSeeder = new RoleSeeder(roleManager);
     await roleSeeder.SeedRolesAsync();

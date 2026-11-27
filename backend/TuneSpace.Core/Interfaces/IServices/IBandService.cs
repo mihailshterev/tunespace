@@ -61,6 +61,7 @@ public interface IBandService
 
     /// <summary>
     /// Adds a user to a band and gives them the BandMember role (site admins keep Admin).
+    /// Users join by accepting an invitation (see <see cref="IBandInvitationService"/>), which calls this.
     /// </summary>
     /// <param name="userId">The unique identifier of the user to add as a member.</param>
     /// <param name="bandId">The unique identifier of the band to which the user will be added.</param>

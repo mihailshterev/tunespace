@@ -45,6 +45,7 @@ export const ENDPOINTS = {
   BANDREGISTER: "Band/register",
   BANDUPDATE: "Band/update",
   BAND: "Band",
+  BAND_INVITATION: "BandInvitation",
   RECOMMENDATIONS: "MusicDiscovery/recommendations",
   ENHANCED_RECOMMENDATIONS: "MusicDiscovery/recommendations/enhanced",
   RECOMMENDATION_FEEDBACK: "MusicDiscovery/feedback",
@@ -87,6 +88,7 @@ export const NotificationTypes = {
   Message: "Message",
   Event: "Event",
   Music: "Music",
+  BandInvite: "BandInvite",
 } as const;
 
 export type NotificationTypes = (typeof NotificationTypes)[keyof typeof NotificationTypes];

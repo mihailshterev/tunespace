@@ -1,5 +1,4 @@
 import {
-  addMemberToBand,
   deleteBand,
   getBand,
   removeBandMember,
@@ -65,16 +64,6 @@ const useBandData = (userId: string) => {
     },
   });
 
-  const { mutateAsync: addMemberMutation } = useMutation({
-    mutationFn: ({ bandId, userId }: { bandId: string; userId: string }) =>
-      addMemberToBand(bandId, userId),
-    onSuccess: () => {
-      queryClient.invalidateQueries({
-        queryKey: ["band", userId],
-      });
-    },
-  });
-
   // Membership changes can change roles (including the signed-in user's), so refresh both.
   const refreshMembership = () => {
     queryClient.invalidateQueries({ queryKey: ["band", userId] });
@@ -117,7 +106,6 @@ const useBandData = (userId: string) => {
     bandData: { band, spotifyProfile, forumThreads },
     mutations: {
       updateBandMutation,
-      addMemberMutation,
       removeMemberMutation,
       setMemberRoleMutation,
       deleteBandMutation,

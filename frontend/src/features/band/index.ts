@@ -1,3 +1,4 @@
+export { BandInvitationsCard } from "./components/band-invitations-card";
 export { BandChatView } from "./views/band-chat-view";
 export { BandDashboardView } from "./views/band-dashboard-view";
 export { BandRegisterView } from "./views/band-register-view";

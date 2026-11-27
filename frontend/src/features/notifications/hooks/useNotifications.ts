@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import httpClient from "@/shared/api/http-client";
 import useSocket from "@/shared/realtime/useSocket";
@@ -9,8 +9,6 @@ const useNotifications = () => {
   const queryClient = useQueryClient();
   const { auth, isAuthenticated } = useAuth();
   const { setUserNotifications } = useSocket();
-
-  const [unreadCount] = useState(0);
 
   const {
     data: notifications,
@@ -30,6 +28,8 @@ const useNotifications = () => {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [notifications]);
+
+  const unreadCount = notifications?.filter((n) => !n.isRead).length ?? 0;
 
   const markAsRead = useMutation({
     mutationFn: async (notificationId: string) => {

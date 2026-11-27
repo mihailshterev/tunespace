@@ -11,6 +11,7 @@ public class TuneSpaceDbContext(DbContextOptions<TuneSpaceDbContext> options) : 
     public DbSet<Band> Bands { get; set; } = null!;
     public DbSet<Follow> Follows { get; set; } = null!;
     public DbSet<BandFollow> BandFollows { get; set; } = null!;
+    public DbSet<BandInvitation> BandInvitations { get; set; } = null!;
     public DbSet<Notification> Notifications { get; set; } = null!;
     public DbSet<Chat> Chats { get; set; } = null!;
     public DbSet<Message> Messages { get; set; } = null!;
@@ -33,6 +34,28 @@ public class TuneSpaceDbContext(DbContextOptions<TuneSpaceDbContext> options) : 
         base.OnModelCreating(modelBuilder);
 
         modelBuilder.HasPostgresExtension("vector");
+
+        modelBuilder.Entity<BandInvitation>(entity =>
+        {
+            entity.HasKey(e => e.Id);
+            entity.HasIndex(e => new { e.BandId, e.UserId }).IsUnique();
+            entity.HasIndex(e => e.UserId);
+
+            entity.HasOne(e => e.Band)
+                .WithMany(b => b.Invitations)
+                .HasForeignKey(e => e.BandId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.User)
+                .WithMany()
+                .HasForeignKey(e => e.UserId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.InvitedBy)
+                .WithMany()
+                .HasForeignKey(e => e.InvitedById)
+                .OnDelete(DeleteBehavior.SetNull);
+        });
 
         modelBuilder.Entity<ArtistEmbedding>(entity =>
         {
