@@ -1,7 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router";
 import { toast } from "sonner";
+import { formatDistanceToNow } from "date-fns";
 import {
+  Clock,
   LogOut,
   MoreHorizontal,
   ShieldCheck,
@@ -31,6 +33,7 @@ import { getErrorMessage } from "@/shared/api/error-message";
 import { ROUTES, UserRole } from "@/shared/utils/constants";
 import UserSearchDialog from "@/features/profile/components/user-search-dialog";
 import type UserType from "@/features/profile/types/user";
+import type BandInvitation from "@/features/band/types/band-invitation";
 import {
   isBandManagerRole,
   type BandMember,
@@ -49,7 +52,9 @@ interface BandMembersProps {
   members: BandMember[];
   currentUserId: string | undefined;
   canManageBand: boolean;
-  onAddMember: (user: UserType) => Promise<void>;
+  pendingInvitations: BandInvitation[];
+  onInviteMember: (user: UserType) => Promise<void>;
+  cancelInvitation: (invitationId: string) => Promise<void>;
   removeMember: (args: { bandId: string; userId: string }) => Promise<void>;
   setMemberRole: (args: {
     bandId: string;
@@ -66,7 +71,9 @@ export function BandMembers({
   members,
   currentUserId,
   canManageBand,
-  onAddMember,
+  pendingInvitations,
+  onInviteMember,
+  cancelInvitation,
   removeMember,
   setMemberRole,
 }: BandMembersProps) {
@@ -152,12 +159,12 @@ export function BandMembers({
               <UserSearchDialog
                 trigger={
                   <button className="text-sm px-3 py-1 bg-primary hover:bg-primary/80 text-primary-foreground rounded-md">
-                    Add Member
+                    Invite Member
                   </button>
                 }
-                title="Add Band Member"
-                onSelectUser={onAddMember}
-                buttonText="Add to Band"
+                title="Invite Band Member"
+                onSelectUser={onInviteMember}
+                buttonText="Send Invite"
               />
             )}
           </div>
@@ -287,6 +294,59 @@ export function BandMembers({
             );
           })}
         </div>
+
+        {canManageBand && pendingInvitations.length > 0 && (
+          <div className="mt-6">
+            <h4 className="text-sm font-semibold text-muted-foreground mb-2">
+              Pending invitations
+            </h4>
+            <ul className="divide-y divide-muted/20 rounded-md border border-muted/20">
+              {pendingInvitations.map((invitation) => (
+                <li
+                  key={invitation.id}
+                  className="flex flex-wrap items-center gap-3 p-3"
+                >
+                  <Avatar className="h-9 w-9">
+                    {invitation.userProfilePicture && (
+                      <AvatarImage
+                        src={`data:image/jpeg;base64,${invitation.userProfilePicture}`}
+                        className="object-cover"
+                      />
+                    )}
+                    <AvatarFallback>
+                      {invitation.userName?.charAt(0)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="min-w-0 flex-1">
+                    <p className="font-medium truncate">{invitation.userName}</p>
+                    <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                      <Clock className="h-3 w-3" />
+                      Invited{" "}
+                      {formatDistanceToNow(new Date(invitation.createdAt), {
+                        addSuffix: true,
+                      })}
+                      {invitation.invitedByName &&
+                        ` by ${invitation.invitedByName}`}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    disabled={busy}
+                    onClick={() =>
+                      run(
+                        () => cancelInvitation(invitation.id),
+                        `Invitation to ${invitation.userName} withdrawn`,
+                      )
+                    }
+                  >
+                    Withdraw
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
       </CardContent>
 
       <Dialog

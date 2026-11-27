@@ -21,6 +21,7 @@ public static class ServiceCollectionExtensions
         services.AddScoped<ISpotifyService, SpotifyService>();
         services.AddScoped<ITokenService, TokenService>();
         services.AddScoped<IBandService, BandService>();
+        services.AddScoped<IBandInvitationService, BandInvitationService>();
         services.AddScoped<IMusicEventService, MusicEventService>();
         services.AddScoped<INotificationService, NotificationService>();
         services.AddScoped<IChatService, ChatService>();

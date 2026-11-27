@@ -145,48 +145,6 @@ public class BandController(
         }
     }
 
-    [HttpPost("add-member")]
-    [Authorize]
-    public async Task<IActionResult> AddMemberToBand([FromBody] AddMemberRequest request)
-    {
-        var userId = request.UserId;
-        var bandId = request.BandId;
-
-        if (string.IsNullOrEmpty(userId) || string.IsNullOrEmpty(bandId))
-        {
-            return BadRequest("User ID and Band ID cannot be null or empty");
-        }
-
-        if (!Guid.TryParse(userId, out var parsedUserId) || !Guid.TryParse(bandId, out var parsedBandId))
-        {
-            return BadRequest("Invalid User ID or Band ID format");
-        }
-
-        try
-        {
-            if (!await _bandService.CanManageBandAsync(User.GetUserId(), parsedBandId))
-            {
-                return Forbid();
-            }
-
-            await _bandService.AddMemberToBandAsync(parsedUserId, parsedBandId);
-            return Ok("Member added successfully");
-        }
-        catch (NotFoundException e)
-        {
-            return NotFound(e.Message);
-        }
-        catch (ConflictException e)
-        {
-            return Conflict(e.Message);
-        }
-        catch (Exception e)
-        {
-            _logger.LogError(e, "Error adding member to band with ID: {BandId}", LoggingExtensions.SanitizeForLogging(bandId));
-            return BadRequest();
-        }
-    }
-
     [HttpPut("update")]
     [Authorize]
     public async Task<IActionResult> UpdateBand([FromForm] BandUpdateRequest request)

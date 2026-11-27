@@ -14,6 +14,7 @@ import { Separator } from "@/shared/ui/separator";
 import { ScrollArea } from "@/shared/ui/scroll-area";
 import { Alert, AlertDescription } from "@/shared/ui/alert";
 import type Notification from "@/shared/types/notification";
+import { BandInvitationsCard } from "@/features/band";
 
 export function NotificationsView() {
   const [activeTab, setActiveTab] = useState<"all" | "unread">("all");
@@ -83,6 +84,8 @@ export function NotificationsView() {
           )}
         </div>
       </div>
+
+      <BandInvitationsCard />
 
       <Tabs
         defaultValue="all"

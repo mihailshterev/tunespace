@@ -18,7 +18,7 @@ namespace TuneSpace.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "9.0.2")
+                .HasAnnotation("ProductVersion", "10.0.15")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
             NpgsqlModelBuilderExtensions.HasPostgresExtension(modelBuilder, "vector");
@@ -285,6 +285,36 @@ namespace TuneSpace.Infrastructure.Migrations
                     b.HasIndex("UserId");
 
                     b.ToTable("BandFollows");
+                });
+
+            modelBuilder.Entity("TuneSpace.Core.Entities.BandInvitation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BandId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("InvitedById")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("InvitedById");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("BandId", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("BandInvitations");
                 });
 
             modelBuilder.Entity("TuneSpace.Core.Entities.BandMessage", b =>
@@ -1130,6 +1160,32 @@ namespace TuneSpace.Infrastructure.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("TuneSpace.Core.Entities.BandInvitation", b =>
+                {
+                    b.HasOne("TuneSpace.Core.Entities.Band", "Band")
+                        .WithMany("Invitations")
+                        .HasForeignKey("BandId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("TuneSpace.Core.Entities.User", "InvitedBy")
+                        .WithMany()
+                        .HasForeignKey("InvitedById")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("TuneSpace.Core.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Band");
+
+                    b.Navigation("InvitedBy");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("TuneSpace.Core.Entities.BandMessage", b =>
                 {
                     b.HasOne("TuneSpace.Core.Entities.BandChat", "BandChat")
@@ -1383,6 +1439,8 @@ namespace TuneSpace.Infrastructure.Migrations
                     b.Navigation("Events");
 
                     b.Navigation("Followers");
+
+                    b.Navigation("Invitations");
 
                     b.Navigation("Members");
 

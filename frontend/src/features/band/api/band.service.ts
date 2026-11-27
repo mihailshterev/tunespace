@@ -15,13 +15,6 @@ export const updateBand = async (updateData: FormData) => {
   await httpClient.put(`${ENDPOINTS.BANDUPDATE}`, updateData);
 };
 
-export const addMemberToBand = async (bandId: string, userId: string) => {
-  await httpClient.post(`${ENDPOINTS.BAND}/add-member`, {
-    bandId,
-    userId,
-  });
-};
-
 export const removeBandMember = async (bandId: string, userId: string) => {
   await httpClient.delete(`${ENDPOINTS.BAND}/${bandId}/members/${userId}`);
 };

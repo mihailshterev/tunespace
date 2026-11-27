@@ -7,6 +7,7 @@ import {
   Music2,
   Calendar,
   MessageSquare,
+  Guitar,
 } from "lucide-react";
 import type Notification from "@/shared/types/notification";
 import { NotificationTypes } from "@/shared/utils/constants";
@@ -34,6 +35,8 @@ const NotificationItem = ({
         return <Calendar className="h-5 w-5 text-purple-500" />;
       case NotificationTypes.Music:
         return <Music2 className="h-5 w-5 text-amber-500" />;
+      case NotificationTypes.BandInvite:
+        return <Guitar className="h-5 w-5 text-primary" />;
       default:
         return <Bell className="h-5 w-5 text-gray-500" />;
     }

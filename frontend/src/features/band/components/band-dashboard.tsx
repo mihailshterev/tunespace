@@ -5,6 +5,7 @@ import { FaSpotify, FaYoutube } from "react-icons/fa";
 import YouTubeEmbedDialog from "./youtube-embed-dialog";
 import useAuth from "@/shared/auth/hooks/useAuth";
 import useBandData from "@/features/band/hooks/useBandData";
+import { useBandInvitations } from "@/features/band/hooks/useBandInvitations";
 import Loading from "@/shared/ui/loading";
 import ConnectSpotifyDialog from "./connect-spotify-dialog";
 import EditBandDialog from "./edit-band-dialog";
@@ -34,6 +35,11 @@ const BandDashboard = () => {
 
   const { bandData, mutations, isBandLoading, isBandError, bandError } =
     useBandData(auth?.id || "");
+
+  const { invitations, inviteMember, cancelInvitation } = useBandInvitations(
+    bandData?.band?.id,
+    canManageBand,
+  );
 
   const { bandEvents } = useEvents(bandData?.band?.id || "");
 
@@ -165,7 +171,7 @@ const BandDashboard = () => {
     }
   };
 
-  const handleAddMember = async (user: UserType) => {
+  const handleInviteMember = async (user: UserType) => {
     try {
       if (!bandData?.band?.id) {
         throw new Error("Band ID is missing");
@@ -175,15 +181,14 @@ const BandDashboard = () => {
         throw new Error("User ID is missing");
       }
 
-      await mutations.addMemberMutation({
-        bandId: bandData.band.id,
-        userId: user.id,
-      });
-      toast(`Added ${user.name} as a band member!`);
+      await inviteMember(user.id);
+      toast.success(
+        `Invitation sent to ${user.name}. They'll join once they accept.`,
+      );
     } catch (error) {
-      console.error("Error adding band member:", error);
+      console.error("Error inviting band member:", error);
       toast.error(
-        getErrorMessage(error, "Failed to add member. Please try again."),
+        getErrorMessage(error, "Failed to send the invitation. Please try again."),
       );
     }
   };
@@ -652,7 +657,9 @@ const BandDashboard = () => {
               members={bandData.band?.members ?? []}
               currentUserId={auth?.id}
               canManageBand={canManageBand}
-              onAddMember={handleAddMember}
+              pendingInvitations={invitations}
+              onInviteMember={handleInviteMember}
+              cancelInvitation={cancelInvitation}
               removeMember={mutations.removeMemberMutation}
               setMemberRole={mutations.setMemberRoleMutation}
             />
